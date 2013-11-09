@@ -15,16 +15,16 @@ import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
 
-public class Cylinder implements CommandExecutor 
+public class Sphere implements CommandExecutor 
 {
 
 	// Class variables
 	private Bulldozer mainPlugin = null;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	Cylinder Constructor
+	// Method: 	Sphere Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Cylinder( Bulldozer instance )
+	public Sphere( Bulldozer instance )
 	{	
 		mainPlugin = instance;
 	}
@@ -32,7 +32,7 @@ public class Cylinder implements CommandExecutor
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
-	// Purpose: 	Handles the "cyl" command
+	// Purpose: 	Handles the "sphere" command
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean onCommand( CommandSender client , Command baseCommand , String arg2 , String[] commandArgs )
@@ -41,7 +41,7 @@ public class Cylinder implements CommandExecutor
 		int argLen = commandArgs.length ;
 		
 		// Check the command
-		if( baseCommand.getName().equalsIgnoreCase( "cyl" ) )
+		if( baseCommand.getName().equalsIgnoreCase( "sph" ) )
 		{	
 			// Check if client is a player
 			if( client instanceof Player )
@@ -54,15 +54,15 @@ public class Cylinder implements CommandExecutor
 				BlockGroup blocksToStore = null;
 				Block firstBlock = null;
 				
-				int lowOffset = 0 , highOffset = 0 , desiredBlockID = 0 , cylRadius = 0;
+				int desiredBlockID = 0 , sphereRadius = 0;
 				
 				//---------------------------------------------------------------------------//
 				// Check One: Verify Player has a valid command -----------------------------//
 				if( argLen == 0 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /cyl -f [Block ID] [Radius] [Height] [Low Offset]" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /cyl -h [Block ID] [Radius] [Height] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /sph -f [Block ID] [Radius]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /sph -h [Block ID] [Radius]" );
 					cPlayer.sendMessage( ChatColor.YELLOW + "Make sure you have a selection before running the command." );
 					return true;
 				}
@@ -77,7 +77,7 @@ public class Cylinder implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayerName , "Cylinder" )) )
+				if( !(mainPlugin.verifyPerm( cPlayerName , "Sphere" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -93,17 +93,13 @@ public class Cylinder implements CommandExecutor
 				{
 					switch( argLen )
 					{
-						case 5:
-							lowOffset = mainPlugin.safeInt( commandArgs[4] , 0 , firstBlock.getY() - 5 );
-						case 4:
-							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
 						case 3:
-							cylRadius = mainPlugin.safeInt( commandArgs[2] , 0 , 2000 );
+							sphereRadius = mainPlugin.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
 							desiredBlockID = mainPlugin.safeInt( commandArgs[1] , 0 , 173 );
 							break;
 						default:
-							desiredBlockID = cylRadius = 0 ;
+							desiredBlockID = sphereRadius = 0 ;
 							break;
 					}
 				}
@@ -114,45 +110,43 @@ public class Cylinder implements CommandExecutor
 				}
 
 				//---------------------------------------------------------------------------//
-				//----------- Filled Cylinder -----------------------------------------------//
+				//----------- Filled Sphere -------------------------------------------------//
 				if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 				{
 					// Make a new group for the player
 					blocksToStore = new BlockGroup();
 							
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
-					setFilledCyl( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + highOffset , 
-							cylRadius , desiredBlockID );
+					setFilledSphere( cPlayerWorld , blocksToStore , 
+							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() ,
+							sphereRadius , desiredBlockID );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Filled Cylinder Complete." );
+					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Filled Sphere Complete." );
 					return true;
 				}
 				//---------------------------------------------------------------------------//
-				//----------- Hollow Cylinder -----------------------------------------------//
+				//----------- Hollow Sphere -------------------------------------------------//
 				else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 				{
 					// Make a new group for the player
 					blocksToStore = new BlockGroup();
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
-					setHollowCyl( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + highOffset , 
-							cylRadius , desiredBlockID );
+					setHollowSphere( cPlayerWorld , blocksToStore , 
+							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() ,
+							sphereRadius , desiredBlockID );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Hollow Cylinder Complete." );
+					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Hollow Sphere Complete." );
 					return true;
 				}
 					
@@ -166,69 +160,37 @@ public class Cylinder implements CommandExecutor
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	setHollowCyl
-	// Purpose: 	Converts the area selected into a hollow cylinder
+	// Method: 	setHollowSphere
+	// Purpose: 	Converts the area selected into a hollow sphere using triple-nested for loops
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setHollowCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType )
-	{
-		// Method variables
-		int blockX = 0 , blockZ = 0;
-		double endVal = 2 * Math.PI;
-		Block cursorBlock = null;
-		
-		// Loop through the area
-		for( double start = 0.001 ; start <= endVal ; start += 0.001 )
-		{
-			blockX = startX + (int) (radius * Math.sin( start )); 
-			blockZ = startZ + (int) (radius * Math.cos( start ));
-			
-			for( int blockY = startY ; blockY <= maxHeight ; blockY++ )
-			{
-				// Get the block
-				cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
-				
-				// If not same as the block type, change it and record the data
-				if( cursorBlock.getTypeId() != blockType ) 
-				{
-					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , (byte) 0 );
-					
-					// Change the data
-					cursorBlock.setTypeId( blockType );
-				}
-			}
-		}
-		
-	}
-	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	setFilledCyl
-	// Purpose: 	Everything in the selection becomes a cylinder of the same block
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setFilledCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType )
+	private void setHollowSphere( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int radius , int blockType )
 	{	
 		// Method variables
+		int coordSquareSum = 0 ;
+		int upperRadiusSquare = (int) ((radius + 0.5) * (radius + 0.5));
+		int lowerRadiusSquare = (int) ((radius - 0.5) * (radius - 0.5));
 		Block cursorBlock = null;
 		
 		// Loop through the area
-		for( int xCoord = -radius ; xCoord <= radius ; xCoord++ )
+		for( int xModifier = -radius ; xModifier <= radius ; xModifier++ )
 		{
-			for( int zCoord = -radius ; zCoord <= radius ; zCoord++ )
+			for( int zModifier = -radius ; zModifier <= radius ; zModifier++ )
 			{
-				// Check if the coordinate is within the circle
-				if( ((xCoord * xCoord) + (zCoord * zCoord)) < (radius * radius) )
+				for( int yModifier = -radius ; yModifier <= radius ; yModifier++ )
 				{
-					for( int blockY = startY ; blockY <= maxHeight ; blockY++ )
+					coordSquareSum = (xModifier * xModifier) + (yModifier * yModifier) + (zModifier * zModifier); 
+					
+					// Check if the point falls in the sphere
+					if( coordSquareSum < upperRadiusSquare && coordSquareSum > lowerRadiusSquare )
 					{
 						// Get the block
-						cursorBlock = curWorld.getBlockAt( startX + xCoord , blockY , startZ + zCoord );
+						cursorBlock = curWorld.getBlockAt( startX + xModifier, startY + yModifier, startZ + zModifier );
 						
 						// If not same as the block type, change it and record the data
 						if( cursorBlock.getTypeId() != blockType ) 
 						{
 							// Record the data
-							blockStorage.addBlock( startX + xCoord , blockY , startZ + zCoord , cursorBlock.getTypeId() , (byte) 0 );
+							blockStorage.addBlock( startX + xModifier, startY + yModifier, startZ + zModifier , cursorBlock.getTypeId() , (byte) 0 );
 							
 							// Change the data
 							cursorBlock.setTypeId( blockType );
@@ -237,7 +199,47 @@ public class Cylinder implements CommandExecutor
 				}
 			}
 		}
+	}
+	
+	
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Method: 	setFilledSphere
+	// Purpose: 	Everything in the selection becomes a solid sphere
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	private void setFilledSphere( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int radius , int blockType )
+	{	
+		// Method variables
+		int coordSquareSum = 0 , radiusSquare = radius * radius;
+		Block cursorBlock = null;
 		
+		// Loop through the area
+		for( int xModifier = -radius + 1 ; xModifier < radius ; xModifier++ )
+		{
+			for( int zModifier = -radius + 1 ; zModifier < radius ; zModifier++ )
+			{
+				for( int yModifier = -radius + 1 ; yModifier < radius ; yModifier++ )
+				{
+					coordSquareSum = (xModifier * xModifier) + (yModifier * yModifier) + (zModifier * zModifier); 
+					
+					// Check if the point falls in the sphere
+					if( coordSquareSum <= radiusSquare )
+					{
+						// Get the block
+						cursorBlock = curWorld.getBlockAt( startX + xModifier, startY + yModifier, startZ + zModifier );
+						
+						// If not same as the block type, change it and record the data
+						if( cursorBlock.getTypeId() != blockType ) 
+						{
+							// Record the data
+							blockStorage.addBlock( startX + xModifier, startY + yModifier, startZ + zModifier , cursorBlock.getTypeId() , (byte) 0 );
+							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+						}
+					}
+				}
+			}
+		}
 	}
 	
 }

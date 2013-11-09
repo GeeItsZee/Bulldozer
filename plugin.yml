@@ -8,6 +8,12 @@ commands:
   cyl:
     description: Change the blocks in a cylinder specified by the selection.
     usage: §bIncorrect Command. For help, type /cyl
+  sph:
+    description: Change the blocks in a sphere specified by the selection.
+    usage: §bIncorrect Command. For help, type /sph
+  cone:
+    description: Change the blocks in a cone specified by the selection.
+    usage: §bIncorrect Command. For help, type /cone
   marker:
     description: Gives you the selection tool.
     usage: /marker

@@ -2,7 +2,7 @@ DatabaseUser: pma
 DatabasePassword: bukkit
 DatabaseURL: localhost
 Total_Access: 
-  - theamdman
-  - TalkyAttorney
-  - Bigbosszee
-  - ubershave
+  - nameOne
+  - nameTwo
+  - nameThree
+  - nameFour

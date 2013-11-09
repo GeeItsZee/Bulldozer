@@ -15,16 +15,16 @@ import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
 
-public class Cylinder implements CommandExecutor 
+public class Cone implements CommandExecutor 
 {
 
 	// Class variables
 	private Bulldozer mainPlugin = null;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	Cylinder Constructor
+	// Method: 	Cone Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Cylinder( Bulldozer instance )
+	public Cone( Bulldozer instance )
 	{	
 		mainPlugin = instance;
 	}
@@ -32,7 +32,7 @@ public class Cylinder implements CommandExecutor
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
-	// Purpose: 	Handles the "cyl" command
+	// Purpose: 	Handles the "cone" command
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean onCommand( CommandSender client , Command baseCommand , String arg2 , String[] commandArgs )
@@ -41,7 +41,7 @@ public class Cylinder implements CommandExecutor
 		int argLen = commandArgs.length ;
 		
 		// Check the command
-		if( baseCommand.getName().equalsIgnoreCase( "cyl" ) )
+		if( baseCommand.getName().equalsIgnoreCase( "cone" ) )
 		{	
 			// Check if client is a player
 			if( client instanceof Player )
@@ -61,8 +61,8 @@ public class Cylinder implements CommandExecutor
 				if( argLen == 0 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /cyl -f [Block ID] [Radius] [Height] [Low Offset]" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /cyl -h [Block ID] [Radius] [Height] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /cone -f [Block ID] [Radius] [High Offset] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /cone -h [Block ID] [Radius] [High Offset] [Low Offset]" );
 					cPlayer.sendMessage( ChatColor.YELLOW + "Make sure you have a selection before running the command." );
 					return true;
 				}
@@ -77,7 +77,7 @@ public class Cylinder implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayerName , "Cylinder" )) )
+				if( !(mainPlugin.verifyPerm( cPlayerName , "Cone" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -121,17 +121,16 @@ public class Cylinder implements CommandExecutor
 					blocksToStore = new BlockGroup();
 							
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
-					setFilledCyl( cPlayerWorld , blocksToStore , 
+					setFilledCone( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + highOffset , 
-							cylRadius , desiredBlockID );
+							highOffset , cylRadius , desiredBlockID );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Filled Cylinder Complete." );
+					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Filled Cone Complete." );
 					return true;
 				}
 				//---------------------------------------------------------------------------//
@@ -142,17 +141,16 @@ public class Cylinder implements CommandExecutor
 					blocksToStore = new BlockGroup();
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
-					setHollowCyl( cPlayerWorld , blocksToStore , 
+					setHollowCone( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + highOffset , 
-							cylRadius , desiredBlockID );
+							highOffset , cylRadius , desiredBlockID );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Hollow Cylinder Complete." );
+					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Hollow Cone Complete." );
 					return true;
 				}
 					
@@ -166,78 +164,102 @@ public class Cylinder implements CommandExecutor
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	setHollowCyl
-	// Purpose: 	Converts the area selected into a hollow cylinder
+	// Method: 	setHollowCone
+	// Purpose: 	Converts the area selected into a hollow cone (cone walls only)
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setHollowCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType )
+	private void setHollowCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType )
 	{
 		// Method variables
-		int blockX = 0 , blockZ = 0;
-		double endVal = 2 * Math.PI;
+		int blockX = 0, blockZ = 0;
+		double stepX, stepZ, stepY = (1.0 / height);
+		
+		double twoPi = 2.0 * Math.PI;
 		Block cursorBlock = null;
 		
 		// Loop through the area
-		for( double start = 0.001 ; start <= endVal ; start += 0.001 )
+		for( double start = 0.001 ; start <= twoPi ; start += 0.001 )
 		{
+			// Calculate the coordinate to start from
 			blockX = startX + (int) (radius * Math.sin( start )); 
 			blockZ = startZ + (int) (radius * Math.cos( start ));
 			
-			for( int blockY = startY ; blockY <= maxHeight ; blockY++ )
+			// Calculate the X and Z changes per Y coordinate change
+			stepX = stepY * ( blockX - startX );
+			stepZ = stepY * ( blockZ - startZ );
+
+			// Loop through to the height at the determined Y coordinate change
+			for( double i = 0 ; i <= height ; i += stepY )
 			{
-				// Get the block
-				cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
+				// Calculate the X, Y offsets
+				int offX = (int) (i * stepX);
+				int offZ = (int) (i * stepZ);
 				
+				// Get the block
+				cursorBlock = curWorld.getBlockAt( startX + offX, startY + height - (int) i, startZ + offZ );
+
 				// If not same as the block type, change it and record the data
 				if( cursorBlock.getTypeId() != blockType ) 
 				{
 					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , (byte) 0 );
+					blockStorage.addBlock( startX + offX, startY + height - (int) i , startZ + offZ, cursorBlock.getTypeId() , (byte) 0 );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
 				}
 			}
 		}
-		
 	}
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	setFilledCyl
-	// Purpose: 	Everything in the selection becomes a cylinder of the same block
+	// Method: 	setFilledCone
+	// Purpose: 	Converts the area into a filled / non-hollow cone
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setFilledCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType )
+	private void setFilledCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType )
 	{	
 		// Method variables
+		int blockX = 0, blockZ = 0;
+		double stepX, stepZ, stepY = (1.0 / height);
+		
+		double twoPi = 2.0 * Math.PI;
 		Block cursorBlock = null;
 		
 		// Loop through the area
-		for( int xCoord = -radius ; xCoord <= radius ; xCoord++ )
+		for( double start = 0.001 ; start <= twoPi ; start += 0.001 )
 		{
-			for( int zCoord = -radius ; zCoord <= radius ; zCoord++ )
+			// Calculate the coordinate to start from
+			blockX = startX + (int) (radius * Math.sin( start )); 
+			blockZ = startZ + (int) (radius * Math.cos( start ));
+			
+			// Calculate the X and Z changes per Y coordinate change
+			stepX = stepY * ( blockX - startX );
+			stepZ = stepY * ( blockZ - startZ );
+
+			// Loop through to the height at the determined Y coordinate change
+			for( double i = 0 ; i <= height ; i += stepY )
 			{
-				// Check if the coordinate is within the circle
-				if( ((xCoord * xCoord) + (zCoord * zCoord)) < (radius * radius) )
+				// Calculate the X, Z offsets
+				int offX = (int) (i * stepX);
+				int offZ = (int) (i * stepZ);
+
+				// Loop and change all the blocks below
+				for( int blockY = startY + height - (int) i ; blockY >= startY ; blockY-- )
 				{
-					for( int blockY = startY ; blockY <= maxHeight ; blockY++ )
+					// Get the block
+					cursorBlock = curWorld.getBlockAt( startX + offX, blockY, startZ + offZ );
+					
+					// If not same as the block type, change it and record the data
+					if( cursorBlock.getTypeId() != blockType ) 
 					{
-						// Get the block
-						cursorBlock = curWorld.getBlockAt( startX + xCoord , blockY , startZ + zCoord );
+						// Record the data
+						blockStorage.addBlock( startX + offX, blockY, startZ + offZ, cursorBlock.getTypeId() , (byte) 0 );
 						
-						// If not same as the block type, change it and record the data
-						if( cursorBlock.getTypeId() != blockType ) 
-						{
-							// Record the data
-							blockStorage.addBlock( startX + xCoord , blockY , startZ + zCoord , cursorBlock.getTypeId() , (byte) 0 );
-							
-							// Change the data
-							cursorBlock.setTypeId( blockType );
-						}
+						// Change the data
+						cursorBlock.setTypeId( blockType );
 					}
 				}
 			}
 		}
-		
 	}
 	
 }
