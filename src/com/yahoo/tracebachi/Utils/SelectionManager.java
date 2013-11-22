@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.bukkit.block.Block;
 
+@SuppressWarnings("deprecation")
 public class SelectionManager
 {
 	

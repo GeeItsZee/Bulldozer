@@ -14,7 +14,7 @@ import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
-
+@SuppressWarnings("deprecation")
 public class Cone implements CommandExecutor 
 {
 
@@ -54,15 +54,16 @@ public class Cone implements CommandExecutor
 				BlockGroup blocksToStore = null;
 				Block firstBlock = null;
 				
-				int lowOffset = 0 , highOffset = 0 , desiredBlockID = 0 , cylRadius = 0;
+				int lowOffset = 0 , height = 0 , cylRadius = 0;
+				int[] desiredBlockID = new int[2];
 				
 				//---------------------------------------------------------------------------//
 				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen == 0 )
+				if( argLen < 2 || argLen > 4 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /cone -f [Block ID] [Radius] [High Offset] [Low Offset]" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /cone -h [Block ID] [Radius] [High Offset] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /cone -f [Block ID] [Radius] [Height]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /cone -h [Block ID] [Radius] [Height]" );
 					cPlayer.sendMessage( ChatColor.YELLOW + "Make sure you have a selection before running the command." );
 					return true;
 				}
@@ -77,7 +78,7 @@ public class Cone implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayerName , "Cone" )) )
+				if( !(mainPlugin.verifyPerm( cPlayer , "Cone" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -93,17 +94,15 @@ public class Cone implements CommandExecutor
 				{
 					switch( argLen )
 					{
-						case 5:
-							lowOffset = mainPlugin.safeInt( commandArgs[4] , 0 , firstBlock.getY() - 5 );
 						case 4:
-							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
+							height = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
 						case 3:
 							cylRadius = mainPlugin.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
-							desiredBlockID = mainPlugin.safeInt( commandArgs[1] , 0 , 173 );
+							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
-							desiredBlockID = cylRadius = 0 ;
+							cylRadius = 0 ;
 							break;
 					}
 				}
@@ -123,7 +122,7 @@ public class Cone implements CommandExecutor
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledCone( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							highOffset , cylRadius , desiredBlockID );
+							height , cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -143,7 +142,7 @@ public class Cone implements CommandExecutor
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowCone( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							highOffset , cylRadius , desiredBlockID );
+							height , cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -167,7 +166,7 @@ public class Cone implements CommandExecutor
 	// Method: 	setHollowCone
 	// Purpose: 	Converts the area selected into a hollow cone (cone walls only)
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setHollowCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType )
+	private void setHollowCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType , byte bData )
 	{
 		// Method variables
 		int blockX = 0, blockZ = 0;
@@ -198,13 +197,14 @@ public class Cone implements CommandExecutor
 				cursorBlock = curWorld.getBlockAt( startX + offX, startY + height - (int) i, startZ + offZ );
 
 				// If not same as the block type, change it and record the data
-				if( cursorBlock.getTypeId() != blockType ) 
+				if( cursorBlock.getTypeId() != blockType )
 				{
 					// Record the data
-					blockStorage.addBlock( startX + offX, startY + height - (int) i , startZ + offZ, cursorBlock.getTypeId() , (byte) 0 );
+					blockStorage.addBlock( startX + offX, startY + height - (int) i , startZ + offZ, cursorBlock.getTypeId() , cursorBlock.getData() );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
+					cursorBlock.setData( bData );
 				}
 			}
 		}
@@ -215,7 +215,7 @@ public class Cone implements CommandExecutor
 	// Method: 	setFilledCone
 	// Purpose: 	Converts the area into a filled / non-hollow cone
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setFilledCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType )
+	private void setFilledCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType, byte bData)
 	{	
 		// Method variables
 		int blockX = 0, blockZ = 0;
@@ -249,13 +249,14 @@ public class Cone implements CommandExecutor
 					cursorBlock = curWorld.getBlockAt( startX + offX, blockY, startZ + offZ );
 					
 					// If not same as the block type, change it and record the data
-					if( cursorBlock.getTypeId() != blockType ) 
+					if( cursorBlock.getTypeId() != blockType )
 					{
 						// Record the data
-						blockStorage.addBlock( startX + offX, blockY, startZ + offZ, cursorBlock.getTypeId() , (byte) 0 );
+						blockStorage.addBlock( startX + offX, blockY, startZ + offZ, cursorBlock.getTypeId() , cursorBlock.getData() );
 						
 						// Change the data
 						cursorBlock.setTypeId( blockType );
+						cursorBlock.setData( bData );
 					}
 				}
 			}

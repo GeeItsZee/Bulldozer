@@ -35,7 +35,7 @@ public class Listener_Tool implements Listener
 			{
 				// Verify the Item is named "Marker" and Player has permission
 				if( playerInter.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.BLUE + "Marker" ) && 
-						mainPlugin.verifyPerm( pName , "Select" ) )
+						mainPlugin.verifyPerm( playerInter.getPlayer() , "Select" ) )
 				{
 					// Add it to the selection list
 					if( mainPlugin.playerSelections.addSelectionFor( pName , playerInter.getClickedBlock() ) )

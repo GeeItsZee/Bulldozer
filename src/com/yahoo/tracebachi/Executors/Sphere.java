@@ -14,7 +14,7 @@ import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
-
+@SuppressWarnings("deprecation")
 public class Sphere implements CommandExecutor 
 {
 
@@ -54,11 +54,12 @@ public class Sphere implements CommandExecutor
 				BlockGroup blocksToStore = null;
 				Block firstBlock = null;
 				
-				int desiredBlockID = 0 , sphereRadius = 0;
+				int sphereRadius = 0;
+				int[] desiredBlockID = new int[2];
 				
 				//---------------------------------------------------------------------------//
 				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen == 0 )
+				if( argLen < 2 || argLen > 3 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
 					cPlayer.sendMessage( ChatColor.GREEN + "    /sph -f [Block ID] [Radius]" );
@@ -77,7 +78,7 @@ public class Sphere implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayerName , "Sphere" )) )
+				if( !(mainPlugin.verifyPerm( cPlayer , "Sphere" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -96,10 +97,10 @@ public class Sphere implements CommandExecutor
 						case 3:
 							sphereRadius = mainPlugin.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
-							desiredBlockID = mainPlugin.safeInt( commandArgs[1] , 0 , 173 );
+							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
-							desiredBlockID = sphereRadius = 0 ;
+							sphereRadius = 0 ;
 							break;
 					}
 				}
@@ -119,7 +120,7 @@ public class Sphere implements CommandExecutor
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledSphere( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() ,
-							sphereRadius , desiredBlockID );
+							sphereRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -139,7 +140,7 @@ public class Sphere implements CommandExecutor
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowSphere( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() ,
-							sphereRadius , desiredBlockID );
+							sphereRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -163,7 +164,7 @@ public class Sphere implements CommandExecutor
 	// Method: 	setHollowSphere
 	// Purpose: 	Converts the area selected into a hollow sphere using triple-nested for loops
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setHollowSphere( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int radius , int blockType )
+	private void setHollowSphere( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int radius , int blockType , byte bData )
 	{	
 		// Method variables
 		int coordSquareSum = 0 ;
@@ -187,13 +188,14 @@ public class Sphere implements CommandExecutor
 						cursorBlock = curWorld.getBlockAt( startX + xModifier, startY + yModifier, startZ + zModifier );
 						
 						// If not same as the block type, change it and record the data
-						if( cursorBlock.getTypeId() != blockType ) 
+						if( cursorBlock.getTypeId() != blockType )
 						{
 							// Record the data
-							blockStorage.addBlock( startX + xModifier, startY + yModifier, startZ + zModifier , cursorBlock.getTypeId() , (byte) 0 );
+							blockStorage.addBlock( startX + xModifier, startY + yModifier, startZ + zModifier , cursorBlock.getTypeId() , cursorBlock.getData() );
 							
 							// Change the data
 							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
 						}
 					}
 				}
@@ -206,7 +208,7 @@ public class Sphere implements CommandExecutor
 	// Method: 	setFilledSphere
 	// Purpose: 	Everything in the selection becomes a solid sphere
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setFilledSphere( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int radius , int blockType )
+	private void setFilledSphere( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int radius , int blockType , byte bData )
 	{	
 		// Method variables
 		int coordSquareSum = 0 , radiusSquare = radius * radius;
@@ -228,13 +230,14 @@ public class Sphere implements CommandExecutor
 						cursorBlock = curWorld.getBlockAt( startX + xModifier, startY + yModifier, startZ + zModifier );
 						
 						// If not same as the block type, change it and record the data
-						if( cursorBlock.getTypeId() != blockType ) 
+						if( cursorBlock.getTypeId() != blockType )
 						{
 							// Record the data
-							blockStorage.addBlock( startX + xModifier, startY + yModifier, startZ + zModifier , cursorBlock.getTypeId() , (byte) 0 );
+							blockStorage.addBlock( startX + xModifier, startY + yModifier, startZ + zModifier , cursorBlock.getTypeId() , cursorBlock.getData() );
 							
 							// Change the data
 							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
 						}
 					}
 				}

@@ -14,7 +14,7 @@ import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
-
+@SuppressWarnings("deprecation")
 public class Border implements CommandExecutor 
 {
 
@@ -56,11 +56,12 @@ public class Border implements CommandExecutor
 				BlockGroup blocksToStore = null;
 				
 				int[] maxCoord = null , minCoord = null ;
-				int listSize = 0 , lowOffset = 0 , highOffset = 0 , desiredBlockID = 0 ;
+				int listSize = 0 , lowOffset = 0 , highOffset = 0 ;
+				int[] desiredBlockID = new int[2];
 				
 				//---------------------------------------------------------------------------//
 				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen == 0 )
+				if( argLen < 2 || argLen > 4 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
 					cPlayer.sendMessage( ChatColor.GREEN + "    /border -c [Block ID] [Low Offset] [High Offset]" );
@@ -79,7 +80,7 @@ public class Border implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayerName , "Border" )) )
+				if( !(mainPlugin.verifyPerm( cPlayer , "Border" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -99,18 +100,16 @@ public class Border implements CommandExecutor
 				{
 					switch( argLen )
 					{
-						
 						case 4:
 							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - maxCoord[1] );
 						case 3:
 							lowOffset = mainPlugin.safeInt( commandArgs[2] , 0 , minCoord[1] - 5 );
 						case 2:
-							desiredBlockID = mainPlugin.safeInt( commandArgs[1] , 0 , 173 );
+							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
-							highOffset = lowOffset = desiredBlockID = 0 ;
+							highOffset = lowOffset = 0 ;
 							break;
-							
 					}
 				}
 				catch( NumberFormatException nfe )
@@ -138,7 +137,7 @@ public class Border implements CommandExecutor
 						setBorder( cPlayerWorld , blocksToStore , 
 								chunkMinBlock.getX() , minCoord[1] - lowOffset , chunkMinBlock.getZ() , 
 								chunkMaxBlock.getX() , maxCoord[1] + highOffset , chunkMaxBlock.getZ() , 
-								desiredBlockID );
+								desiredBlockID[0] , (byte) desiredBlockID[1] );
 					}
 					
 					// Push the recorded blocks
@@ -162,7 +161,7 @@ public class Border implements CommandExecutor
 					setBorder( cPlayerWorld , blocksToStore , 
 							minCoord[0] , minCoord[1] - lowOffset , minCoord[2] , 
 							maxCoord[0] , maxCoord[1] + highOffset , maxCoord[2] , 
-							desiredBlockID );
+							desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -187,9 +186,8 @@ public class Border implements CommandExecutor
 	// Method: 	setBorder
 	// Purpose: 	Convert the outline of the selection to the block ID passed
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setBorder( World curWorld , BlockGroup blockStorage , int minX , int minY , int minZ , int maxX , int maxY , int maxZ , int blockType )
+	private void setBorder( World curWorld , BlockGroup blockStorage , int minX , int minY , int minZ , int maxX , int maxY , int maxZ , int blockType , byte bData )
 	{
-		
 		// Method variables
 		Block cursorBlock = null;
 		int blockX = minX , blockY = minY , blockZ = minZ ;
@@ -198,23 +196,20 @@ public class Border implements CommandExecutor
 		// At the end of the loop: minX -> maxX
 		for( blockX = minX , blockZ = minZ ; blockX <= maxX ; blockX++ )
 		{
-				
 			for( blockY = minY ; blockY <= maxY ; blockY++ )
 			{
-					
 				// Get the block
 				cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
 				
 				// If not same as the block type, change it and record the data
 				if( cursorBlock.getTypeId() != blockType ) 
 				{ 
-						
 					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , blockType , (byte) 0 );
+					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
-						
+					cursorBlock.setData( bData );
 				}
 			}
 		}
@@ -223,23 +218,20 @@ public class Border implements CommandExecutor
 		// At the end of the loop: minZ -> maxZ
 		for( blockZ = minZ , blockX = maxX ; blockZ <= maxZ ; blockZ++ )
 		{
-				
 			for( blockY = minY ; blockY <= maxY ; blockY++ )
 			{
-					
 				// Get the block
 				cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
 				
 				// If not same as the block type, change it and record the data
 				if( cursorBlock.getTypeId() != blockType ) 
 				{ 
-						
 					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , blockType , (byte) 0 );
+					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
-						
+					cursorBlock.setData( bData );
 				}
 			}
 		}
@@ -248,23 +240,20 @@ public class Border implements CommandExecutor
 		// At the end of the loop: maxX -> minX
 		for( blockX = maxX , blockZ = maxZ ; blockX >= minX ; blockX-- )
 		{
-				
 			for( blockY = minY ; blockY <= maxY ; blockY++ )
 			{
-					
 				// Get the block
 				cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
 				
 				// If not same as the block type, change it and record the data
 				if( cursorBlock.getTypeId() != blockType ) 
-				{ 
-						
+				{
 					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , blockType , (byte) 0 );
+					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
-						
+					cursorBlock.setData( bData );
 				}
 			}
 		}
@@ -273,23 +262,20 @@ public class Border implements CommandExecutor
 		// At the end of the loop: maxZ -> minZ
 		for( blockZ = maxZ , blockX = minX ; blockZ >= minZ ; blockZ-- )
 		{
-				
 			for( blockY = minY ; blockY <= maxY ; blockY++ )
 			{
-					
 				// Get the block
 				cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
 				
 				// If not same as the block type, change it and record the data
 				if( cursorBlock.getTypeId() != blockType ) 
-				{ 
-						
+				{
 					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , (byte) 0 );
+					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
-						
+					cursorBlock.setData( bData );
 				}
 			}
 		}

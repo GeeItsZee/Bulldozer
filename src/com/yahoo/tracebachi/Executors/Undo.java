@@ -52,7 +52,11 @@ public class Undo implements CommandExecutor
 					if( cmdArgs[ 0 ].equalsIgnoreCase( "all" ) )
 					{
 						// Undo all edits
-						while( mainPlugin.playerUndo.revertBlocksFor( commandSender.getName() , cPlayerWorld ) );
+						while( mainPlugin.playerUndo.revertBlocksFor( commandSender.getName() , cPlayerWorld ) )
+						{
+							// Tell the player one step was undone
+							commandSender.sendMessage( mainPlugin.MESSAGE_UNDO );	
+						}
 					}
 					//----------------------------------------------------------------------//
 					//----------- Undo Clear -----------------------------------------------//
@@ -96,7 +100,7 @@ public class Undo implements CommandExecutor
 				Player commandSender = (Player) client;
 				
 				// Verify the permissions of the client
-				if( mainPlugin.verifyPerm( commandSender.getName() , "SquareRemoveChunk" ) )
+				if( mainPlugin.verifyPerm( commandSender , "SquareRemoveChunk" ) )
 				{
 					// Clear all undo storage
 					mainPlugin.playerUndo.clearAllStoredBlocks();

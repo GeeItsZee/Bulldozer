@@ -1,6 +1,6 @@
 name: Bulldozer
 main: com.yahoo.tracebachi.Bulldozer
-version: 06_Alpha
+version: 6.2_Alpha
 commands:
   box:
     description: Change the blocks in a box specified by the selection. 
@@ -14,6 +14,9 @@ commands:
   cone:
     description: Change the blocks in a cone specified by the selection.
     usage: §bIncorrect Command. For help, type /cone
+  replace:
+    description: Replace the blocks in the selection with the first ID to the second
+    usage: §bIncorrect Command. For help, type /replace
   marker:
     description: Gives you the selection tool.
     usage: /marker

@@ -15,7 +15,7 @@ import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
 @SuppressWarnings("deprecation")
-public class Box implements CommandExecutor 
+public class Replace implements CommandExecutor 
 {
 
 	// Class variables
@@ -24,7 +24,7 @@ public class Box implements CommandExecutor
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Box Default Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Box( Bulldozer instance )
+	public Replace( Bulldozer instance )
 	{
 		mainPlugin = instance;
 	}
@@ -40,7 +40,7 @@ public class Box implements CommandExecutor
 		int argLen = commandArgs.length ;
 		
 		// Check the command
-		if( baseCommand.getName().equalsIgnoreCase( "box" ) )
+		if( baseCommand.getName().equalsIgnoreCase( "replace" ) )
 		{
 			// Check if client is a player
 			if( client instanceof Player )
@@ -53,16 +53,17 @@ public class Box implements CommandExecutor
 				BlockGroup blocksToStore = null;
 				
 				int[] maxCoord = null , minCoord = null ;
-				int listSize = 0 , lowOffset = 0 , highOffset = 0 ;
+				int listSize = 0 , lowOffset = 0 , highOffset = 0; 
+				int[] originalBlockID = new int[2];
 				int[] desiredBlockID = new int[2];
 				
 				//---------------------------------------------------------------------------//
 				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen < 2 || argLen > 4 )
+				if( argLen < 2 || argLen > 5 )
 				{
-					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /box -c [Block ID] [High Offset] [Low Offset]" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /box -p [Block ID] [High Offset] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are ( -c for chunk based , -p for inbetween blocks ):" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /replace -c [Original Block ID] [Final Block ID] [High Offset] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /replace -p [Original Block ID] [Final Block ID] [High Offset] [Low Offset]" );
 					cPlayer.sendMessage( ChatColor.YELLOW + "Make sure you have a selection before running the command." );
 					return true;	
 				}
@@ -77,7 +78,7 @@ public class Box implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayer , "Box" )) )
+				if( !(mainPlugin.verifyPerm( cPlayer , "Replace" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -97,15 +98,17 @@ public class Box implements CommandExecutor
 				{
 					switch( argLen )
 					{
+						case 5:
+							lowOffset = mainPlugin.safeInt( commandArgs[4] , 0 , minCoord[1] - 5 );
 						case 4:
-							lowOffset = mainPlugin.safeInt( commandArgs[3] , 0 , minCoord[1] - 5 );
+							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - maxCoord[1] );
 						case 3:
-							highOffset = mainPlugin.safeInt( commandArgs[2] , 0 , 254 - maxCoord[1] );
+							desiredBlockID = mainPlugin.safeIntList( commandArgs[2] , 0 , 173 );
 						case 2:
-							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
+							originalBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
-							highOffset = lowOffset = 0 ;
+							highOffset = lowOffset = 0;
 							break;
 					}
 				}
@@ -133,7 +136,7 @@ public class Box implements CommandExecutor
 						setCuboid( cPlayerWorld , blocksToStore , 
 							chunkMinBlock.getX() , minCoord[1] - lowOffset , chunkMinBlock.getZ() , 
 							chunkMaxBlock.getX() , maxCoord[1] + highOffset , chunkMaxBlock.getZ() , 
-							desiredBlockID[0] , (byte) desiredBlockID[1] );
+							originalBlockID[0] , (byte) originalBlockID[1] , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					}
 					
 					// Push the recorded blocks
@@ -155,7 +158,7 @@ public class Box implements CommandExecutor
 					setCuboid( cPlayerWorld , blocksToStore , 
 						minCoord[0] , minCoord[1] - lowOffset , minCoord[2] , 
 						maxCoord[0] , maxCoord[1] + highOffset , maxCoord[2] , 
-						desiredBlockID[0] , (byte) desiredBlockID[1] );
+						originalBlockID[0] , (byte) originalBlockID[1] , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -178,14 +181,14 @@ public class Box implements CommandExecutor
 	// Purpose: 	Convert a rectangular prism of the selected blocks to a different ID
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	private void setCuboid( World curWorld , BlockGroup blockStorage , int minX , int minY , int minZ , int maxX , int maxY , int maxZ , 
-						int blockType , byte bData )
+						int originalBlock , byte oData , int finalBlock , byte fData )
 	{	
 		// Method variables
 		Block cursorBlock = null;
 		
 		// Loop through the area
 		for( int blockY = minY ; blockY <= maxY ; blockY++ )
-		{
+		{	
 			for( int blockX = minX ; blockX <= maxX ; blockX++ )
 			{
 				for( int blockZ = minZ ; blockZ <= maxZ ; blockZ++ )
@@ -194,15 +197,14 @@ public class Box implements CommandExecutor
 					cursorBlock = curWorld.getBlockAt( blockX , blockY , blockZ );
 					
 					// If not same as the block type, change it and record the data
-					if( cursorBlock.getTypeId() != blockType ) 
-					{	
+					if( cursorBlock.getTypeId() == originalBlock ) 
+					{ 
 						// Record the data
-						blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+						blockStorage.addBlock( blockX , blockY , blockZ , originalBlock , oData );
 						
 						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
-							
+						cursorBlock.setTypeId( finalBlock );
+						cursorBlock.setData( fData );
 					}
 				}
 			}

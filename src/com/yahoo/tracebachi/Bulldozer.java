@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -12,6 +13,7 @@ import com.yahoo.tracebachi.Executors.Border;
 import com.yahoo.tracebachi.Executors.Box;
 import com.yahoo.tracebachi.Executors.Cone;
 import com.yahoo.tracebachi.Executors.Cylinder;
+import com.yahoo.tracebachi.Executors.Replace;
 import com.yahoo.tracebachi.Executors.Selection;
 import com.yahoo.tracebachi.Executors.Sphere;
 import com.yahoo.tracebachi.Executors.Undo;
@@ -19,6 +21,7 @@ import com.yahoo.tracebachi.Utils.BlockStorageManager;
 import com.yahoo.tracebachi.Utils.DatabaseManager;
 import com.yahoo.tracebachi.Utils.SelectionManager;
 
+@SuppressWarnings("deprecation")
 public class Bulldozer extends JavaPlugin
 {
 	
@@ -46,6 +49,7 @@ public class Bulldozer extends JavaPlugin
 	public final String ERROR_SELECTION = ChatColor.RED + "You have not selected any block!" ;
 	public final String ERROR_CONSOLE = "[Bulldozer Console] This command cannot be run in the console." ;
 	public final String ERROR_NO_UNDO = ChatColor.RED + "There is nothing to undo!" ;
+	public final String MESSAGE_UNDO = ChatColor.GREEN + "Undo of one step." ;
 
 	// Called on Plug-in Enable
 	@Override
@@ -55,7 +59,7 @@ public class Bulldozer extends JavaPlugin
 		//dbUser = this.getConfig().getConfigurationSection("").getString( "DatabaseUser" );
 		//dbPassword = this.getConfig().getConfigurationSection("").getString( "DatabasePassword" );
 		//dbURL = this.getConfig().getConfigurationSection("").getString( "DatabaseURL" );
-		fullAccess  = this.getConfig().getConfigurationSection("").getStringList( "Total_Access" );
+		//fullAccess  = this.getConfig().getConfigurationSection("").getStringList( "Total_Access" );
 		
 		// Utility Setup
 		playerSelections = new SelectionManager();
@@ -78,12 +82,17 @@ public class Bulldozer extends JavaPlugin
 		selectionToolMeta.setDisplayName( ChatColor.BLUE + "Marker" );
 		selectionTool.setItemMeta( selectionToolMeta );
 		
+		// Broadcast the enable
+		getServer().broadcastMessage( ChatColor.BLUE + "Running: Bulldozer Alpha v6.2" );
+		
 		// Set the executors
 		getCommand( "box" ).setExecutor( new Box( this ) );
 		getCommand( "cyl" ).setExecutor( new Cylinder( this ) );
 		getCommand( "sph" ).setExecutor( new Sphere( this ) );
 		getCommand( "cone" ).setExecutor( new Cone( this ) );
 		getCommand( "border" ).setExecutor( new Border( this ) );
+		
+		getCommand( "replace" ).setExecutor( new Replace( this ) );
 		
 		getCommand( "marker" ).setExecutor( new Selection( this ) );
 		getCommand( "clear" ).setExecutor( new Selection( this ) );
@@ -114,20 +123,20 @@ public class Bulldozer extends JavaPlugin
 		
 	}
 
-	// Method: Check player permissions 
-	public boolean verifyPerm( String playerName , String permission )
-	{ 	
-		// Check if player is in the access list
-		if( fullAccess.contains( playerName )  )
-		{
-			return true;			
-		}
-		
-		// Otherwise
-		return false;
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Method: 	verifyPerm
+	// Purpose: 	Check the player's permissions
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	public boolean verifyPerm( Player user , String permission )
+	{	
+		// Check if player is OP
+		return user.isOp();
 	}
 
-	// Method: Safe Integer
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Method: 	safeInteger
+	// Purpose: 	Convert a string to an integer
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	public int safeInt( String toParse , int minimumVal , int maximumVal ) throws NumberFormatException
 	{
 		// Initialize values
@@ -150,6 +159,36 @@ public class Bulldozer extends JavaPlugin
 		
 		// Return
 		return result;
+	}
+	
+	
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Method: 	safeIntList
+	// Purpose: 	Convert a rectangular prism of the selected blocks to a different ID
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	public int[] safeIntList( String toParse , int minVal , int maxVal ) throws NumberFormatException
+	{
+		// Split the strings if needed
+		String[] values = toParse.split(":");
+
+		// Initialize an integer array for return values
+		int[] toReturn = new int[ 2 ];
+		
+		// Loop through and parse each of the values
+		switch( values.length )
+		{
+			case 2:
+				toReturn[1] = safeInt( values[1] , 0 , 15 );
+			case 1:
+				toReturn[0] = safeInt( values[0] , minVal , maxVal );
+				break;
+			default:
+				toReturn[1] = toReturn [0] = 0;
+				break;
+		}
+		
+		// Return the integer array
+		return toReturn;
 	}
 	
 }

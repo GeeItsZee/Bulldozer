@@ -87,7 +87,7 @@ public class Selection implements CommandExecutor
 				Player commandSender = (Player) client;
 				
 				// Verify the permissions of the client
-				if( mainPlugin.verifyPerm( commandSender.getName() , "SquareRemoveChunk" ) )
+				if( mainPlugin.verifyPerm( commandSender , "SquareRemoveChunk" ) )
 				{
 					// Clear all selections
 					mainPlugin.playerSelections.removeAll();

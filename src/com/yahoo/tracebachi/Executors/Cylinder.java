@@ -14,7 +14,7 @@ import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
 import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
-
+@SuppressWarnings("deprecation")
 public class Cylinder implements CommandExecutor 
 {
 
@@ -54,11 +54,12 @@ public class Cylinder implements CommandExecutor
 				BlockGroup blocksToStore = null;
 				Block firstBlock = null;
 				
-				int lowOffset = 0 , highOffset = 0 , desiredBlockID = 0 , cylRadius = 0;
+				int lowOffset = 0 , height = 0 , cylRadius = 0;
+				int[] desiredBlockID = new int[2];
 				
 				//---------------------------------------------------------------------------//
 				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen == 0 )
+				if( argLen < 2 || argLen > 5 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
 					cPlayer.sendMessage( ChatColor.GREEN + "    /cyl -f [Block ID] [Radius] [Height] [Low Offset]" );
@@ -77,7 +78,7 @@ public class Cylinder implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayerName , "Cylinder" )) )
+				if( !(mainPlugin.verifyPerm( cPlayer , "Cylinder" )) )
 				{
 					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
 					return true;
@@ -96,14 +97,14 @@ public class Cylinder implements CommandExecutor
 						case 5:
 							lowOffset = mainPlugin.safeInt( commandArgs[4] , 0 , firstBlock.getY() - 5 );
 						case 4:
-							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
+							height = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
 						case 3:
 							cylRadius = mainPlugin.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
-							desiredBlockID = mainPlugin.safeInt( commandArgs[1] , 0 , 173 );
+							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
-							desiredBlockID = cylRadius = 0 ;
+							lowOffset = height = cylRadius = 0 ;
 							break;
 					}
 				}
@@ -123,8 +124,8 @@ public class Cylinder implements CommandExecutor
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledCyl( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + highOffset , 
-							cylRadius , desiredBlockID );
+							firstBlock.getY() + height , 
+							cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -144,8 +145,8 @@ public class Cylinder implements CommandExecutor
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowCyl( cPlayerWorld , blocksToStore , 
 							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + highOffset , 
-							cylRadius , desiredBlockID );
+							firstBlock.getY() + height , 
+							cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
 					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
@@ -169,7 +170,7 @@ public class Cylinder implements CommandExecutor
 	// Method: 	setHollowCyl
 	// Purpose: 	Converts the area selected into a hollow cylinder
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setHollowCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType )
+	private void setHollowCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType , byte bData )
 	{
 		// Method variables
 		int blockX = 0 , blockZ = 0;
@@ -191,10 +192,11 @@ public class Cylinder implements CommandExecutor
 				if( cursorBlock.getTypeId() != blockType ) 
 				{
 					// Record the data
-					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , (byte) 0 );
+					blockStorage.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
 					
 					// Change the data
 					cursorBlock.setTypeId( blockType );
+					cursorBlock.setData( bData );
 				}
 			}
 		}
@@ -206,7 +208,7 @@ public class Cylinder implements CommandExecutor
 	// Method: 	setFilledCyl
 	// Purpose: 	Everything in the selection becomes a cylinder of the same block
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	private void setFilledCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType )
+	private void setFilledCyl( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int maxHeight , int radius , int blockType , byte bData )
 	{	
 		// Method variables
 		Block cursorBlock = null;
@@ -228,10 +230,11 @@ public class Cylinder implements CommandExecutor
 						if( cursorBlock.getTypeId() != blockType ) 
 						{
 							// Record the data
-							blockStorage.addBlock( startX + xCoord , blockY , startZ + zCoord , cursorBlock.getTypeId() , (byte) 0 );
+							blockStorage.addBlock( startX + xCoord , blockY , startZ + zCoord , cursorBlock.getTypeId() , cursorBlock.getData() );
 							
 							// Change the data
 							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
 						}
 					}
 				}
