@@ -1,19 +1,21 @@
 package com.yahoo.tracebachi.Executors;
 
-import org.bukkit.ChatColor;
+//import org.bukkit.World;
+//import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
+//import com.yahoo.tracebachi.Utils.BlockGroup;
 
-
+//@SuppressWarnings("deprecation")
 public class Selection implements CommandExecutor
 {
 	
 	// Create the executor's plug-in class instance for linking
-	private Bulldozer mainPlugin;
+	private Bulldozer core;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Selection Default Constructor
@@ -21,7 +23,7 @@ public class Selection implements CommandExecutor
 	public Selection( Bulldozer instance )
 	{
 		// Link the main instance with this executor
-		mainPlugin = instance;
+		core = instance;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -31,10 +33,9 @@ public class Selection implements CommandExecutor
 	@Override
 	public boolean onCommand( CommandSender client, Command cmd , String label, String[] cmdArgs )
 	{
-		
 		//-------------------------------------------------------------------------------------//
-		//----------- Marker ------------------------------------------------------------------//
-		if( cmd.getName().equalsIgnoreCase( "marker" ) )
+		//----------- Kit ---------------------------------------------------------------------//
+		if( cmd.getName().equalsIgnoreCase( "kit" ) )
 		{
 			// Check if the client is a player
 			if( client instanceof Player )
@@ -43,19 +44,25 @@ public class Selection implements CommandExecutor
 				Player commandSender = (Player) client;
 				
 				// Give the player the tool if they don't have one
-				if( !( commandSender.getInventory().contains( mainPlugin.selectionTool ) ) )
-				{
-						
+				if( !( commandSender.getInventory().contains( core.selectionTool ) ) )
+				{	
 					// Give
-					commandSender.getInventory().addItem( mainPlugin.selectionTool );
+					commandSender.getInventory().addItem( core.selectionTool );
 					
-					// Output that the selection has been wiped
-					commandSender.sendMessage( ChatColor.GREEN + "[Bulldozer] Given \"Marker\" " );
-						
+					// Output that the marker and paste tool was given
+					commandSender.sendMessage( core.TAG_POSITIVE + "Given \"Marker.\"" );
+				}
+				// Give the player the tool if they don't have one
+				if( !( commandSender.getInventory().contains( core.pasteTool ) ) )
+				{	
+					// Give
+					commandSender.getInventory().addItem( core.pasteTool );
+					
+					// Output that the marker and paste tool was given
+					commandSender.sendMessage( core.TAG_POSITIVE + "Given \"Paste Wand.\"" );
 				}
 				return true;
 			}
-				
 		}
 		//-------------------------------------------------------------------------------------//
 		//----------- Clear -------------------------------------------------------------------//
@@ -66,15 +73,25 @@ public class Selection implements CommandExecutor
 			{
 				// Cast the client as a player
 				Player commandSender = (Player) client;
+
+				// Clear the clipboard
+				core.playerCopy.clearBlocksFor( commandSender.getName() );
 				
 				// Clear the selection
-				mainPlugin.playerSelections.removeSelectionFor( commandSender.getName() );
+				if( core.playerSelections.removeSelectionFor( commandSender.getName() ) )
+				{
+					// Output that the selection has been wiped
+					commandSender.sendMessage( core.TAG_POSITIVE + "Selection and Clipboard Cleared" );
+				}
+				else
+				{
+					// Output that the selection has been wiped
+					commandSender.sendMessage( core.TAG_NEGATIVE + "Clipboard cleared, but Selection was already Cleared" );
+				}
 				
-				// Output that the selection has been wiped
-				commandSender.sendMessage( ChatColor.GREEN + "[Bulldozer] Selection Cleared" );
+				// Return
 				return true;
 			}
-				
 		}
 		//-------------------------------------------------------------------------------------//
 		//----------- Clear All ---------------------------------------------------------------//
@@ -87,11 +104,11 @@ public class Selection implements CommandExecutor
 				Player commandSender = (Player) client;
 				
 				// Verify the permissions of the client
-				if( mainPlugin.verifyPerm( commandSender , "SquareRemoveChunk" ) )
+				if( core.verifyPerm( commandSender , "SquareRemoveChunk" ) )
 				{
 					// Clear all selections
-					mainPlugin.playerSelections.removeAll();
-					mainPlugin.getLogger().info( "All player selections cleared." );
+					core.playerSelections.removeAll();
+					core.getLogger().info( "All player selections cleared." );
 					return true;
 				}
 				
@@ -101,8 +118,8 @@ public class Selection implements CommandExecutor
 			else
 			{
 				// Clear selection
-				mainPlugin.playerSelections.removeAll();
-				mainPlugin.getLogger().info( "All player selections cleared." );
+				core.playerSelections.removeAll();
+				core.getLogger().info( "All player selections cleared." );
 				return true;
 			}
 		}

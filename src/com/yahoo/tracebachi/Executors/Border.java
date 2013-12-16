@@ -1,7 +1,5 @@
 package com.yahoo.tracebachi.Executors;
 
-import java.util.List;
-
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -12,21 +10,20 @@ import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
-import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
 @SuppressWarnings("deprecation")
 public class Border implements CommandExecutor 
 {
 
 	// Class variables
-	private Bulldozer mainPlugin = null;
+	private Bulldozer core = null;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Border Default Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	public Border( Bulldozer instance )
 	{
-		mainPlugin = instance;
+		core = instance;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,7 +49,7 @@ public class Border implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName() ;
-				List< SelBlock > cPlayerSelection = mainPlugin.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
 				BlockGroup blocksToStore = null;
 				
 				int[] maxCoord = null , minCoord = null ;
@@ -64,8 +61,8 @@ public class Border implements CommandExecutor
 				if( argLen < 2 || argLen > 4 )
 				{
 					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /border -c [Block ID] [Low Offset] [High Offset]" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /border -b [Block ID] [Low Offset] [High Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /border -c [Block ID] [High Offset] [Low Offset]" );
+					cPlayer.sendMessage( ChatColor.GREEN + "    /border -b [Block ID] [High Offset] [Low Offset]" );
 					cPlayer.sendMessage( ChatColor.YELLOW + "Make sure you have a selection before running the command." );
 					return true;
 				}
@@ -74,25 +71,25 @@ public class Border implements CommandExecutor
 				// Check Two: Verify Player has a selection ---------------------------------//
 				if( cPlayerSelection == null )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_SELECTION );
+					cPlayer.sendMessage( core.ERROR_SELECTION );
 					return true;
 				}
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayer , "Border" )) )
+				if( !(core.verifyPerm( cPlayer , "Border" )) )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
+					cPlayer.sendMessage( core.ERROR_PERM );
 					return true;
 				}
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				listSize = cPlayerSelection.size();
+				listSize = cPlayerSelection.getSize();
 				
 				// Get the minimum and maximum array
-				maxCoord = mainPlugin.playerSelections.getMaximumsFor( cPlayerName );
-				minCoord = mainPlugin.playerSelections.getMinimumsFor( cPlayerName );
+				maxCoord = core.playerSelections.getMaximumsFor( cPlayerName );
+				minCoord = core.playerSelections.getMinimumsFor( cPlayerName );
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -101,11 +98,11 @@ public class Border implements CommandExecutor
 					switch( argLen )
 					{
 						case 4:
-							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - maxCoord[1] );
+							lowOffset = core.safeInt( commandArgs[3] , 0 , 254 - maxCoord[1] );
 						case 3:
-							lowOffset = mainPlugin.safeInt( commandArgs[2] , 0 , minCoord[1] - 5 );
+							highOffset = core.safeInt( commandArgs[2] , 0 , minCoord[1] - 5 );
 						case 2:
-							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
+							desiredBlockID = core.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
 							highOffset = lowOffset = 0 ;
@@ -114,7 +111,7 @@ public class Border implements CommandExecutor
 				}
 				catch( NumberFormatException nfe )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_INT );
+					cPlayer.sendMessage( core.ERROR_INT );
 					return true;
 				}
 
@@ -122,16 +119,18 @@ public class Border implements CommandExecutor
 				//----------- Chunk Border --------------------------------------------------//
 				if( commandArgs[0].equalsIgnoreCase( "-c" ) )
 				{
-
 					// Make a new group for the player
-					blocksToStore = new BlockGroup();
+					blocksToStore = new BlockGroup( cPlayerWorld );
+					
+					// Revert the selection without clearing the selection
+					cPlayerSelection.revertBlocks( false );
 					
 					// Execute for chunks
 					for( int listIndex = 0 ; listIndex < listSize ; listIndex++ )
 					{
 						// Set up chunk variables
-						Block chunkMinBlock = cPlayerSelection.get( listIndex ).toStore.getChunk().getBlock( 0 , 1 , 0 );
-						Block chunkMaxBlock = cPlayerSelection.get( listIndex ).toStore.getChunk().getBlock( 15 , 1 , 15 );
+						Block chunkMinBlock = cPlayerSelection.getChunkOfBlock( listIndex ).getBlock( 0 , 1 , 0 );
+						Block chunkMaxBlock = cPlayerSelection.getChunkOfBlock( listIndex ).getBlock( 15 , 1 , 15 );
 						
 						// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 						setBorder( cPlayerWorld , blocksToStore , 
@@ -141,13 +140,12 @@ public class Border implements CommandExecutor
 					}
 					
 					// Push the recorded blocks
-					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
+					core.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Chunk Border Complete." );
+					cPlayer.sendMessage( core.TAG_POSITIVE + "Chunk Border Complete." );
 					return true;
-						
 				}
 				//---------------------------------------------------------------------------//
 				//----------- Point Border --------------------------------------------------//
@@ -155,7 +153,10 @@ public class Border implements CommandExecutor
 				{
 						
 					// Make a new group for the player
-					blocksToStore = new BlockGroup();
+					blocksToStore = new BlockGroup( cPlayerWorld );
+					
+					// Revert the selection without clearing the selection
+					cPlayerSelection.revertBlocks( false );
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setBorder( cPlayerWorld , blocksToStore , 
@@ -164,17 +165,15 @@ public class Border implements CommandExecutor
 							desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
-					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
+					core.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Point Border Complete." );
+					cPlayer.sendMessage( core.TAG_POSITIVE + "Point Border Complete." );
 					return true;
-						
 				}
-					
 			}
-			else { client.sendMessage( mainPlugin.ERROR_CONSOLE ); }
+			else { client.sendMessage( core.ERROR_CONSOLE ); }
 		}
 		// Return false by default
 		return false;

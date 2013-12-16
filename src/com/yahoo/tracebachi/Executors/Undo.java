@@ -1,7 +1,6 @@
 package com.yahoo.tracebachi.Executors;
 
 import org.bukkit.ChatColor;
-import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -13,7 +12,7 @@ public class Undo implements CommandExecutor
 {
 
 	// Create the executor's plug-in class instance for linking
-	private Bulldozer mainPlugin;
+	private Bulldozer core;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Undo Default Constructor
@@ -21,7 +20,7 @@ public class Undo implements CommandExecutor
 	public Undo( Bulldozer instance )
 	{
 		// Link the main instance with this executor
-		mainPlugin = instance;
+		core = instance;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +41,6 @@ public class Undo implements CommandExecutor
 				
 				// Set up the player variables
 				Player commandSender = (Player) client;
-				World cPlayerWorld = commandSender.getWorld();
 				
 				// Check if there is a second argument
 				if( cmdArgs.length == 1 )
@@ -51,19 +49,26 @@ public class Undo implements CommandExecutor
 					//----------- Undo All -------------------------------------------------//
 					if( cmdArgs[ 0 ].equalsIgnoreCase( "all" ) )
 					{
+						// Initialize a counter
+						int counter = 0;
+						
 						// Undo all edits
-						while( mainPlugin.playerUndo.revertBlocksFor( commandSender.getName() , cPlayerWorld ) )
+						while( core.playerUndo.revertBlocksFor( commandSender.getName() ) )
 						{
-							// Tell the player one step was undone
-							commandSender.sendMessage( mainPlugin.MESSAGE_UNDO );	
+							// Increment the counter
+							counter++;
 						}
+						
+						// Tell the player of completion
+						commandSender.sendMessage( core.TAG_POSITIVE + "Undo of " + 
+							ChatColor.LIGHT_PURPLE + counter + ChatColor.GREEN + " Complete." );	
 					}
 					//----------------------------------------------------------------------//
 					//----------- Undo Clear -----------------------------------------------//
-					else if( cmdArgs[ 0 ].equalsIgnoreCase( "clear" ) )
+					else if( cmdArgs[ 0 ].equalsIgnoreCase( "final" ) )
 					{
 						// Clear all the storage for undo
-						mainPlugin.playerUndo.clearAllStoredBlocksFor( commandSender.getName() );
+						core.playerUndo.clearBlocksFor( commandSender.getName() );
 					}
 					//----------------------------------------------------------------------//
 					//----------- Undo Help ------------------------------------------------//
@@ -71,8 +76,9 @@ public class Undo implements CommandExecutor
 					{
 						// Output possible commands
 						commandSender.sendMessage(  ChatColor.YELLOW + "The possible commands are:" );
+						commandSender.sendMessage(  ChatColor.GREEN + "    /undo (to undo one edit)" );
 						commandSender.sendMessage(  ChatColor.GREEN + "    /undo all (to undo all edits)" );
-						commandSender.sendMessage(  ChatColor.GREEN + "    /undo clear (to clear all saved undos)" );
+						commandSender.sendMessage(  ChatColor.GREEN + "    /undo final (to finalize all saved undos)" );
 					}
 						
 				}
@@ -81,13 +87,21 @@ public class Undo implements CommandExecutor
 				else
 				{
 					// Check if the list is null
-					if( !(mainPlugin.playerUndo.revertBlocksFor( commandSender.getName() , cPlayerWorld ) ) )
+					if( core.playerUndo.revertBlocksFor( commandSender.getName() ) )
+					{
+						// Tell the player there was an undo of one step
+						commandSender.sendMessage( core.TAG_POSITIVE + "Undo of 1 Complete." );	
+					}
+					else
 					{
 						// Tell the player there was nothing to undo
-						commandSender.sendMessage( mainPlugin.ERROR_NO_UNDO );	
+						commandSender.sendMessage( core.ERROR_NO_UNDO );	
 					}
 				}
 			}
+			
+			// Return true
+			return true;
 		}
 		//-------------------------------------------------------------------------------------//
 		//----------- Wipe --------------------------------------------------------------------//
@@ -100,19 +114,19 @@ public class Undo implements CommandExecutor
 				Player commandSender = (Player) client;
 				
 				// Verify the permissions of the client
-				if( mainPlugin.verifyPerm( commandSender , "SquareRemoveChunk" ) )
+				if( core.verifyPerm( commandSender , "SquareRemoveChunk" ) )
 				{
 					// Clear all undo storage
-					mainPlugin.playerUndo.clearAllStoredBlocks();
-					mainPlugin.getLogger().info( "Undo storage for all players cleared." );
+					core.playerUndo.clearAllStoredBlocks();
+					core.getLogger().info( "Undo storage for all players cleared." );
 					return true;
 				}
 			}
 			else
 			{
 				// Clear undo storage
-				mainPlugin.playerUndo.clearAllStoredBlocks();
-				mainPlugin.getLogger().info( "Undo storage for all players cleared." );
+				core.playerUndo.clearAllStoredBlocks();
+				core.getLogger().info( "Undo storage for all players cleared." );
 				return true;
 			}
 		}

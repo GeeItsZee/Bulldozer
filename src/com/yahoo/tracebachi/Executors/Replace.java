@@ -1,7 +1,5 @@
 package com.yahoo.tracebachi.Executors;
 
-import java.util.List;
-
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -12,21 +10,20 @@ import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
-import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
 @SuppressWarnings("deprecation")
 public class Replace implements CommandExecutor 
 {
 
 	// Class variables
-	private Bulldozer mainPlugin = null;
+	private Bulldozer core = null;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Box Default Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	public Replace( Bulldozer instance )
 	{
-		mainPlugin = instance;
+		core = instance;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +46,7 @@ public class Replace implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName();
-				List < SelBlock > cPlayerSelection = mainPlugin.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
 				BlockGroup blocksToStore = null;
 				
 				int[] maxCoord = null , minCoord = null ;
@@ -72,25 +69,25 @@ public class Replace implements CommandExecutor
 				// Check Two: Verify Player has a selection ---------------------------------//
 				if( cPlayerSelection == null )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_SELECTION );
+					cPlayer.sendMessage( core.ERROR_SELECTION );
 					return true;
 				}
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayer , "Replace" )) )
+				if( !(core.verifyPerm( cPlayer , "Replace" )) )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
+					cPlayer.sendMessage( core.ERROR_PERM );
 					return true;
 				}
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				listSize = cPlayerSelection.size();
+				listSize = cPlayerSelection.getSize();
 				
 				// Get the minimum and maximum array
-				maxCoord = mainPlugin.playerSelections.getMaximumsFor( cPlayerName );
-				minCoord = mainPlugin.playerSelections.getMinimumsFor( cPlayerName );
+				maxCoord = core.playerSelections.getMaximumsFor( cPlayerName );
+				minCoord = core.playerSelections.getMinimumsFor( cPlayerName );
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -99,13 +96,13 @@ public class Replace implements CommandExecutor
 					switch( argLen )
 					{
 						case 5:
-							lowOffset = mainPlugin.safeInt( commandArgs[4] , 0 , minCoord[1] - 5 );
+							lowOffset = core.safeInt( commandArgs[4] , 0 , minCoord[1] - 5 );
 						case 4:
-							highOffset = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - maxCoord[1] );
+							highOffset = core.safeInt( commandArgs[3] , 0 , 254 - maxCoord[1] );
 						case 3:
-							desiredBlockID = mainPlugin.safeIntList( commandArgs[2] , 0 , 173 );
+							desiredBlockID = core.safeIntList( commandArgs[2] , 0 , 173 );
 						case 2:
-							originalBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
+							originalBlockID = core.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
 							highOffset = lowOffset = 0;
@@ -114,7 +111,7 @@ public class Replace implements CommandExecutor
 				}
 				catch( NumberFormatException nfe )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_INT );
+					cPlayer.sendMessage( core.ERROR_INT );
 					return true;
 				}
 
@@ -123,14 +120,17 @@ public class Replace implements CommandExecutor
 				if( commandArgs[0].equalsIgnoreCase( "-c" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup();
+					blocksToStore = new BlockGroup( cPlayerWorld );
+					
+					// Revert the selection without clearing the selection
+					cPlayerSelection.revertBlocks( false );
 					
 					// Execute for chunks
 					for( int listIndex = 0 ; listIndex < listSize ; listIndex++ )
 					{
 						// Set up chunk variables
-						Block chunkMinBlock = cPlayerSelection.get( listIndex ).toStore.getChunk().getBlock( 0 , 1 , 0 );
-						Block chunkMaxBlock = cPlayerSelection.get( listIndex ).toStore.getChunk().getBlock( 15 , 1 , 15 );
+						Block chunkMinBlock = cPlayerSelection.getChunkOfBlock( listIndex ).getBlock( 0 , 1 , 0 );
+						Block chunkMaxBlock = cPlayerSelection.getChunkOfBlock( listIndex ).getBlock( 15 , 1 , 15 );
 						
 						// Execute Change
 						setCuboid( cPlayerWorld , blocksToStore , 
@@ -140,11 +140,11 @@ public class Replace implements CommandExecutor
 					}
 					
 					// Push the recorded blocks
-					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
+					core.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Chunk Box Complete." );
+					cPlayer.sendMessage( core.TAG_POSITIVE + "Chunk Replace Complete." );
 					return true;
 				}
 				//---------------------------------------------------------------------------//
@@ -152,7 +152,10 @@ public class Replace implements CommandExecutor
 				else if( commandArgs[0].equalsIgnoreCase( "-p" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup();
+					blocksToStore = new BlockGroup( cPlayerWorld );
+					
+					// Revert the selection without clearing the selection
+					cPlayerSelection.revertBlocks( false );
 					
 					// Execute Change
 					setCuboid( cPlayerWorld , blocksToStore , 
@@ -161,15 +164,15 @@ public class Replace implements CommandExecutor
 						originalBlockID[0] , (byte) originalBlockID[1] , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
-					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
+					core.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Point Box Complete." );
+					cPlayer.sendMessage( core.TAG_POSITIVE + "Point Box Complete." );
 					return true;
 				}
 			}
-			else { client.sendMessage( mainPlugin.ERROR_CONSOLE ); }
+			else { client.sendMessage( core.ERROR_CONSOLE ); }
 		}
 		// Return false by default
 		return false;

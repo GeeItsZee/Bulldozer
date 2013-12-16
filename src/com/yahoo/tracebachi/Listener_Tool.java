@@ -6,52 +6,76 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
+import com.yahoo.tracebachi.Utils.BlockGroup;
+
 
 public class Listener_Tool implements Listener
 {
 
 	// Class variables
-	private Bulldozer mainPlugin = null ;
+	private Bulldozer core = null ;
 	
 	// Default Constructor
 	public Listener_Tool( Bulldozer instance )
 	{
 		// Link with the main class
-		mainPlugin = instance;
+		core = instance;
 	}
 	
 	// Player Click Check
 	@EventHandler
-	public void onPlayerInteract( PlayerInteractEvent playerInter )
+	public void onPlayerInteract( PlayerInteractEvent event )
 	{
 		// Get the variables to check
-		String pName = playerInter.getPlayer().getName() ;
+		String pName = event.getPlayer().getName() ;
 		
 		// Verify a Right-Click on Block and Item used has Display Name
-		if( playerInter.getAction() == Action.RIGHT_CLICK_BLOCK && playerInter.hasItem() )
-		{	
+		if( event.getAction() == Action.RIGHT_CLICK_BLOCK && event.hasItem() )
+		{
 			// Verify if the Item has meta data to check
-			if( playerInter.getItem().hasItemMeta() )
+			if( event.getItem().hasItemMeta() )
 			{
-				// Verify the Item is named "Marker" and Player has permission
-				if( playerInter.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.BLUE + "Marker" ) && 
-						mainPlugin.verifyPerm( playerInter.getPlayer() , "Select" ) )
+				// Execute for Select
+				if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Marker" ) && 
+						core.verifyPerm( event.getPlayer() , "Select" ) )
 				{
 					// Add it to the selection list
-					if( mainPlugin.playerSelections.addSelectionFor( pName , playerInter.getClickedBlock() ) )
+					core.playerSelections.addSelectionFor( pName , event.getClickedBlock() );
+					
+					// Advise the player that the block was added
+					event.getPlayer().sendMessage( core.TAG_POSITIVE + "Block added to the selection." );
+					
+					// Cancel the event
+					event.setCancelled( true );
+				}
+				// Execute for Paste
+				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Paste Block" ) && 
+						core.verifyPerm( event.getPlayer() , "Paste" ) )
+				{
+					// Create a temp reference to the group
+					BlockGroup tempGroup = core.playerCopy.duplicateBlocksFor( pName , event.getClickedBlock() );
+					
+					// Store if not null
+					if( tempGroup != null )
 					{
-						playerInter.getPlayer().sendMessage( ChatColor.GREEN + "[Bulldozer] Block added." );
+						// Add the paste to the undo storage
+						core.playerUndo.pushGroupFor( pName , tempGroup );
+						
+						// Advise the player
+						event.getPlayer().sendMessage( core.TAG_POSITIVE + "Paste operation complete." );
+						tempGroup = null;
 					}
 					else
 					{
-						playerInter.getPlayer().sendMessage( ChatColor.RED + "[Bulldozer] Block is already in the selection." );
+						// Advise the player
+						event.getPlayer().sendMessage( core.TAG_NEGATIVE + "Nothing to paste!" );
 					}
 					
+					// Cancel the event
+					event.setCancelled( true );
 				}
-				
 			}
 			
 		}
 	}
-		
 }

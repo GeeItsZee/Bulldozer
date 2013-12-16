@@ -1,9 +1,12 @@
 package com.yahoo.tracebachi;
 
-import java.util.List;
+import java.io.File;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -12,96 +15,96 @@ import org.bukkit.plugin.java.JavaPlugin;
 import com.yahoo.tracebachi.Executors.Border;
 import com.yahoo.tracebachi.Executors.Box;
 import com.yahoo.tracebachi.Executors.Cone;
+import com.yahoo.tracebachi.Executors.Copy;
 import com.yahoo.tracebachi.Executors.Cylinder;
+import com.yahoo.tracebachi.Executors.Load;
 import com.yahoo.tracebachi.Executors.Replace;
 import com.yahoo.tracebachi.Executors.Selection;
 import com.yahoo.tracebachi.Executors.Sphere;
 import com.yahoo.tracebachi.Executors.Undo;
-import com.yahoo.tracebachi.Utils.BlockStorageManager;
-import com.yahoo.tracebachi.Utils.DatabaseManager;
+import com.yahoo.tracebachi.Utils.BlockGroupManager;
 import com.yahoo.tracebachi.Utils.SelectionManager;
 
-@SuppressWarnings("deprecation")
 public class Bulldozer extends JavaPlugin
 {
 	
-	// Initialize DB Variables
-	/*private String dbUser = null;
-	private String dbPassword = null;
-	private String dbURL = null;*/
-
 	// Initialize the custom item
-	public ItemStack selectionTool = new ItemStack( 318 );
+	public ItemStack selectionTool = new ItemStack( Material.WOOL , 1 , (byte) 15 );
+	public ItemStack pasteTool = new ItemStack( Material.WOOL , 1 , (byte) 9 );
 	public ItemMeta selectionToolMeta = selectionTool.getItemMeta();
+	public ItemMeta pasteToolMeta = pasteTool.getItemMeta();
 	
 	// Initialize the utilities
 	public SelectionManager playerSelections = null;
-	public BlockStorageManager playerUndo = null;
-	public DatabaseManager pluginDB = null ;
+	public BlockGroupManager playerUndo = null;
+	public BlockGroupManager playerCopy = null;
+	public ExecutorService asyncExec = null;
 	
-	// Initialize the list of able players
-	List < String > fullAccess = null;
-	
-	// Initialize errors strings
+	// Initialize message strings
+	public final String TAG_POSITIVE = ChatColor.YELLOW + "[Bulldozer] " + ChatColor.GREEN;
+	public final String TAG_NEGATIVE = ChatColor.YELLOW + "[Bulldozer] " + ChatColor.RED;
 	public final String ERROR_PERM = ChatColor.RED + "You do not have the permission to do that." ;
 	public final String ERROR_INT = ChatColor.RED + "You have entered an invalid value for an integer." ;
-	public final String ERROR_COMMAND = ChatColor.RED + "You have entered a valid command." ;
 	public final String ERROR_SELECTION = ChatColor.RED + "You have not selected any block!" ;
 	public final String ERROR_CONSOLE = "[Bulldozer Console] This command cannot be run in the console." ;
 	public final String ERROR_NO_UNDO = ChatColor.RED + "There is nothing to undo!" ;
-	public final String MESSAGE_UNDO = ChatColor.GREEN + "Undo of one step." ;
+	public final String PLAN_FOLDER = "plugins" + File.separator + "ArchFiles" + File.separator;
 
 	// Called on Plug-in Enable
 	@Override
 	public void onEnable()
 	{
-		// Get information from the config file
-		//dbUser = this.getConfig().getConfigurationSection("").getString( "DatabaseUser" );
-		//dbPassword = this.getConfig().getConfigurationSection("").getString( "DatabasePassword" );
-		//dbURL = this.getConfig().getConfigurationSection("").getString( "DatabaseURL" );
-		//fullAccess  = this.getConfig().getConfigurationSection("").getStringList( "Total_Access" );
-		
 		// Utility Setup
 		playerSelections = new SelectionManager();
-		playerUndo = new BlockStorageManager();
-		/*pluginDB = new Util_Database( this , dbURL , dbUser , dbPassword );
-		pluginDB.setupDatabase( "Bulldozer" );
-		pluginDB.setupTable( "Permissions" );
-		pluginDB.setupColumn( "Permissions" , "CanEdit" , false );
-		
-		// Make sure that permissions for the full access are set
-		for( String toModify : fullAccess )
-			{
-				
-				pluginDB.addPlayer( "Permissions" , toModify );
-				pluginDB.setValue( "Permissions" , toModify , "CanEdit = '1'" );
-				
-			}*/
+		playerUndo = new BlockGroupManager();
+		playerCopy = new BlockGroupManager();
+		asyncExec = Executors.newFixedThreadPool( 5 );
 	
 		// Set up the custom item
-		selectionToolMeta.setDisplayName( ChatColor.BLUE + "Marker" );
+		selectionToolMeta.setDisplayName( ChatColor.YELLOW + "Marker" );
 		selectionTool.setItemMeta( selectionToolMeta );
 		
-		// Broadcast the enable
-		getServer().broadcastMessage( ChatColor.BLUE + "Running: Bulldozer Alpha v6.2" );
+		pasteToolMeta.setDisplayName( ChatColor.YELLOW + "Paste Block" );
+		pasteTool.setItemMeta( pasteToolMeta );
 		
-		// Set the executors
+		// Broadcast the enable
+		getServer().broadcastMessage( ChatColor.BLUE + "Running: Bulldozer Alpha v7" );
+		
+		// Create the Plan Folder if not already there
+		File savedFolder = new File( getDataFolder().getParent() + File.separator + "ArchFiles" );
+		savedFolder.mkdir();
+		
+		// Initialize the shape command executors
 		getCommand( "box" ).setExecutor( new Box( this ) );
 		getCommand( "cyl" ).setExecutor( new Cylinder( this ) );
 		getCommand( "sph" ).setExecutor( new Sphere( this ) );
 		getCommand( "cone" ).setExecutor( new Cone( this ) );
 		getCommand( "border" ).setExecutor( new Border( this ) );
 		
+		// Initialize the replacement command executor
 		getCommand( "replace" ).setExecutor( new Replace( this ) );
 		
-		getCommand( "marker" ).setExecutor( new Selection( this ) );
-		getCommand( "clear" ).setExecutor( new Selection( this ) );
-		getCommand( "clearall" ).setExecutor( new Selection( this ) );
+		// Initialize the selection command executor
+		Selection selectExec = new Selection( this );
+		getCommand( "kit" ).setExecutor( selectExec );
+		getCommand( "clear" ).setExecutor( selectExec );
+		getCommand( "clearall" ).setExecutor( selectExec );
 		
-		getCommand( "undo" ).setExecutor( new Undo( this ) );
-		getCommand( "wipe" ).setExecutor( new Undo( this ) );
+		// Initialize the copy command executor
+		getCommand( "copy" ).setExecutor( new Copy( this ) );
+		
+		// Initialize the load command executor
+		getCommand( "load" ).setExecutor( new Load( this ) );
+		
+		// Initialize the undo command executor
+		Undo undoExec = new Undo( this );
+		getCommand( "undo" ).setExecutor( undoExec );
+		getCommand( "wipe" ).setExecutor( undoExec );
+		
+		// Initialize the copy command executor
+		getCommand( "copy" ).setExecutor( new Copy( this ) );
 	
-		// Set listener
+		// Register listener
 		Bukkit.getServer().getPluginManager().registerEvents( new Listener_Tool( this ) , this );
 	}
 
@@ -109,18 +112,20 @@ public class Bulldozer extends JavaPlugin
 	@Override
 	public void onDisable()
 	{
-			
+		// Shut down the thread service
+		asyncExec.shutdownNow();
+		
 		// Disable the selection manager
 		playerSelections.removeAll();
 		playerSelections = null;
 		
 		// Clear the block storage
-		playerUndo.clearEverythingForAll();
+		playerUndo.closeManager();
 		playerUndo = null;
 		
-		// Close the database
-		//pluginDB.close();
-		
+		// Clear the block storage
+		playerCopy.closeManager();
+		playerCopy = null;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////

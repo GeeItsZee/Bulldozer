@@ -1,7 +1,5 @@
 package com.yahoo.tracebachi.Executors;
 
-import java.util.List;
-
 import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -12,21 +10,20 @@ import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Utils.BlockGroup;
-import com.yahoo.tracebachi.Utils.SelectionManager.SelBlock;
 
 @SuppressWarnings("deprecation")
 public class Cone implements CommandExecutor 
 {
 
 	// Class variables
-	private Bulldozer mainPlugin = null;
+	private Bulldozer core = null;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Cone Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	public Cone( Bulldozer instance )
 	{	
-		mainPlugin = instance;
+		core = instance;
 	}
 
 	
@@ -50,11 +47,11 @@ public class Cone implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName() ;
-				List < SelBlock > cPlayerSelection = mainPlugin.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
 				BlockGroup blocksToStore = null;
 				Block firstBlock = null;
 				
-				int lowOffset = 0 , height = 0 , cylRadius = 0;
+				int height = 0 , cylRadius = 0;
 				int[] desiredBlockID = new int[2];
 				
 				//---------------------------------------------------------------------------//
@@ -72,21 +69,21 @@ public class Cone implements CommandExecutor
 				// Check Two: Verify Player has a selection ---------------------------------//
 				if( cPlayerSelection == null )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_SELECTION );
+					cPlayer.sendMessage( core.ERROR_SELECTION );
 					return true;
 				}
 				
 				//---------------------------------------------------------------------------//
 				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(mainPlugin.verifyPerm( cPlayer , "Cone" )) )
+				if( !(core.verifyPerm( cPlayer , "Cone" )) )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_PERM );
+					cPlayer.sendMessage( core.ERROR_PERM );
 					return true;
 				}
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				firstBlock = cPlayerSelection.get(0).toStore;
+				firstBlock = cPlayerSelection.getFirst();
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -95,11 +92,11 @@ public class Cone implements CommandExecutor
 					switch( argLen )
 					{
 						case 4:
-							height = mainPlugin.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
+							height = core.safeInt( commandArgs[3] , 5 - firstBlock.getY() , 254 - firstBlock.getY() );
 						case 3:
-							cylRadius = mainPlugin.safeInt( commandArgs[2] , 0 , 2000 );
+							cylRadius = core.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
-							desiredBlockID = mainPlugin.safeIntList( commandArgs[1] , 0 , 173 );
+							desiredBlockID = core.safeIntList( commandArgs[1] , 0 , 173 );
 							break;
 						default:
 							cylRadius = 0 ;
@@ -108,7 +105,7 @@ public class Cone implements CommandExecutor
 				}
 				catch( NumberFormatException nfe )
 				{
-					cPlayer.sendMessage( mainPlugin.ERROR_INT );
+					cPlayer.sendMessage( core.ERROR_INT );
 					return true;
 				}
 
@@ -117,19 +114,22 @@ public class Cone implements CommandExecutor
 				if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup();
+					blocksToStore = new BlockGroup( cPlayerWorld );
+					
+					// Revert the selection without clearing the selection
+					cPlayerSelection.revertBlocks( false );
 							
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledCone( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
+							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() , 
 							height , cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
-					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
+					core.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Filled Cone Complete." );
+					cPlayer.sendMessage( core.TAG_POSITIVE + "Filled Cone Complete." );
 					return true;
 				}
 				//---------------------------------------------------------------------------//
@@ -137,24 +137,27 @@ public class Cone implements CommandExecutor
 				else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup();
+					blocksToStore = new BlockGroup( cPlayerWorld );
+					
+					// Revert the selection without clearing the selection
+					cPlayerSelection.revertBlocks( false );
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowCone( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
+							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() , 
 							height , cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
-					mainPlugin.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
+					core.playerUndo.pushGroupFor( cPlayerName , blocksToStore );
 					blocksToStore = null;
 					
 					// Return for complete
-					cPlayer.sendMessage( ChatColor.GREEN + "[Bulldozer] Hollow Cone Complete." );
+					cPlayer.sendMessage( core.TAG_POSITIVE + "Hollow Cone Complete." );
 					return true;
 				}
 					
 			}
-			else { client.sendMessage( mainPlugin.ERROR_CONSOLE ); }
+			else { client.sendMessage( core.ERROR_CONSOLE ); }
 		}
 		
 		// Return false by default
@@ -169,42 +172,74 @@ public class Cone implements CommandExecutor
 	private void setHollowCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType , byte bData )
 	{
 		// Method variables
-		int blockX = 0, blockZ = 0;
 		double stepX, stepZ, stepY = (1.0 / height);
+		int coneTop = startY + height;
 		
-		double twoPi = 2.0 * Math.PI;
+		double twoPi = 2.000 * Math.PI;
 		Block cursorBlock = null;
 		
-		// Loop through the area
-		for( double start = 0.001 ; start <= twoPi ; start += 0.001 )
+		// Check the case
+		if( height > 0 )
 		{
-			// Calculate the coordinate to start from
-			blockX = startX + (int) (radius * Math.sin( start )); 
-			blockZ = startZ + (int) (radius * Math.cos( start ));
-			
-			// Calculate the X and Z changes per Y coordinate change
-			stepX = stepY * ( blockX - startX );
-			stepZ = stepY * ( blockZ - startZ );
-
-			// Loop through to the height at the determined Y coordinate change
-			for( double i = 0 ; i <= height ; i += stepY )
+			// Loop through the area
+			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
 			{
-				// Calculate the X, Y offsets
-				int offX = (int) (i * stepX);
-				int offZ = (int) (i * stepZ);
-				
-				// Get the block
-				cursorBlock = curWorld.getBlockAt( startX + offX, startY + height - (int) i, startZ + offZ );
+				// Calculate the coordinate changes per step
+				stepX = stepY * (int) (radius * Math.sin( radian )); 
+				stepZ = stepY * (int) (radius * Math.cos( radian ));
 
-				// If not same as the block type, change it and record the data
-				if( cursorBlock.getTypeId() != blockType )
+				// Loop through to the height at the determined Y coordinate change
+				for( double i = 0.0 ; i <= height ; i += stepY )
 				{
-					// Record the data
-					blockStorage.addBlock( startX + offX, startY + height - (int) i , startZ + offZ, cursorBlock.getTypeId() , cursorBlock.getData() );
+					// Calculate the coordinates
+					int offX = startX + (int) (i * stepX);
+					int offZ = startZ + (int) (i * stepZ);
 					
-					// Change the data
-					cursorBlock.setTypeId( blockType );
-					cursorBlock.setData( bData );
+					// Get the block
+					cursorBlock = curWorld.getBlockAt( offX , coneTop - (int) i, offZ );
+
+					// If not same as the block type, change it and record the data
+					if( cursorBlock.getTypeId() != blockType )
+					{
+						// Record the data
+						blockStorage.addBlock( offX , coneTop - (int) i , offZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+						
+						// Change the data
+						cursorBlock.setTypeId( blockType );
+						cursorBlock.setData( bData );
+					}
+				}
+			}
+		}
+		else
+		{
+			// Loop through the area
+			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
+			{
+				// Calculate the coordinate changes per step
+				stepX = stepY * (int) (radius * Math.sin( radian )); 
+				stepZ = stepY * (int) (radius * Math.cos( radian ));
+
+				// Loop through to the height at the determined Y coordinate change
+				for( double i = 0.0 ; i >= height ; i += stepY )
+				{
+					// Calculate the coordinates
+					int offX = startX + (int) (i * stepX);
+					int offZ = startZ + (int) (i * stepZ);
+					
+					// Get the block
+					cursorBlock = curWorld.getBlockAt( offX , coneTop - (int) i, offZ );
+
+					// If not same as the block type, change it and record the data
+					if( cursorBlock.getTypeId() != blockType )
+					{
+						// Record the data
+						blockStorage.addBlock( offX , coneTop - (int) i , offZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+						
+						// Change the data
+						cursorBlock.setTypeId( blockType );
+						cursorBlock.setData( bData );
+					}
 				}
 			}
 		}
@@ -218,45 +253,81 @@ public class Cone implements CommandExecutor
 	private void setFilledCone( World curWorld , BlockGroup blockStorage , int startX , int startY , int startZ , int height , int radius , int blockType, byte bData)
 	{	
 		// Method variables
-		int blockX = 0, blockZ = 0;
 		double stepX, stepZ, stepY = (1.0 / height);
+		int coneTop = startY + height;
 		
-		double twoPi = 2.0 * Math.PI;
+		double twoPi = 2.000 * Math.PI;
 		Block cursorBlock = null;
 		
-		// Loop through the area
-		for( double start = 0.001 ; start <= twoPi ; start += 0.001 )
+		// Check the case
+		if( height > 0 )
 		{
-			// Calculate the coordinate to start from
-			blockX = startX + (int) (radius * Math.sin( start )); 
-			blockZ = startZ + (int) (radius * Math.cos( start ));
-			
-			// Calculate the X and Z changes per Y coordinate change
-			stepX = stepY * ( blockX - startX );
-			stepZ = stepY * ( blockZ - startZ );
-
-			// Loop through to the height at the determined Y coordinate change
-			for( double i = 0 ; i <= height ; i += stepY )
+			// Loop through the area
+			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
 			{
-				// Calculate the X, Z offsets
-				int offX = (int) (i * stepX);
-				int offZ = (int) (i * stepZ);
+				// Calculate the coordinate changes per step
+				stepX = stepY * (int) (radius * Math.sin( radian )); 
+				stepZ = stepY * (int) (radius * Math.cos( radian ));
 
-				// Loop and change all the blocks below
-				for( int blockY = startY + height - (int) i ; blockY >= startY ; blockY-- )
+				// Loop through to the height at the determined Y coordinate change
+				for( double i = 0.0 ; i <= height ; i += stepY )
 				{
-					// Get the block
-					cursorBlock = curWorld.getBlockAt( startX + offX, blockY, startZ + offZ );
-					
-					// If not same as the block type, change it and record the data
-					if( cursorBlock.getTypeId() != blockType )
+					// Calculate the coordinates
+					int offX = startX + (int) (i * stepX);
+					int offZ = startZ + (int) (i * stepZ);
+
+					// Loop and change all the blocks below
+					for( int blockY = coneTop - (int) i ; blockY >= startY ; blockY-- )
 					{
-						// Record the data
-						blockStorage.addBlock( startX + offX, blockY, startZ + offZ, cursorBlock.getTypeId() , cursorBlock.getData() );
+						// Get the block
+						cursorBlock = curWorld.getBlockAt( offX , blockY , offZ );
 						
-						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
+						// If not same as the block type, change it and record the data
+						if( cursorBlock.getTypeId() != blockType )
+						{
+							// Record the data
+							blockStorage.addBlock( offX , blockY , offZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			// Loop through the area
+			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
+			{
+				// Calculate the coordinate changes per step
+				stepX = stepY * (int) (radius * Math.sin( radian )); 
+				stepZ = stepY * (int) (radius * Math.cos( radian ));
+
+				// Loop through to the height at the determined Y coordinate change
+				for( double i = 0.0 ; i >= height ; i += stepY )
+				{
+					// Calculate the coordinates
+					int offX = startX + (int) (i * stepX);
+					int offZ = startZ + (int) (i * stepZ);
+
+					// Loop and change all the blocks below
+					for( int blockY = coneTop - (int) i ; blockY >= startY ; blockY-- )
+					{
+						// Get the block
+						cursorBlock = curWorld.getBlockAt( offX , blockY , offZ );
+						
+						// If not same as the block type, change it and record the data
+						if( cursorBlock.getTypeId() != blockType )
+						{
+							// Record the data
+							blockStorage.addBlock( offX , blockY , offZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
+						}
 					}
 				}
 			}
