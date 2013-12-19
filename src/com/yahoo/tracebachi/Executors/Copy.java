@@ -30,7 +30,7 @@ public class Copy implements CommandExecutor
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
-	// Purpose: 	Handles "marker" , "clear" , and "clearall" commands
+	// Purpose: 	Handles "copy" command
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean onCommand( CommandSender client, Command cmd , String label, String[] commandArgs )
@@ -48,8 +48,8 @@ public class Copy implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName();
-				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
-				BlockGroup blocksToStore = null;
+				BlockGroup cPlayerSelection = core.playerSelections.getGroupFor( cPlayerName );
+				BlockGroup clipBoard = core.playerCopy.getGroupFor( cPlayerName );
 				Block cursorBlock = null;
 				
 				int highOffset = 0, lowOffset = 0;
@@ -84,18 +84,15 @@ public class Copy implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				maxCoord = core.playerSelections.getMaximumsFor( cPlayerName );
-				minCoord = core.playerSelections.getMinimumsFor( cPlayerName );
+				maxCoord = cPlayerSelection.getMaximums();
+				minCoord = cPlayerSelection.getMinimums();
 				
-				// Wipe the clip-board if not empty
-				core.playerCopy.clearBlocksFor( cPlayerName );
+				// Wipe the clip-board if not empty and set the key block
+				clipBoard.clearBlockInfo();
+				clipBoard.setKeyBlock( cPlayerSelection.getKeyBlock( cPlayerWorld ) );
 				
-				// Set up the block storage
-				blocksToStore = new BlockGroup( cPlayerWorld );
-				blocksToStore.setKeyBlock( cPlayerSelection.getKeyBlock() );
-				
-				// Clear the selection of the player
-				core.playerSelections.removeSelectionFor( cPlayerName );
+				// Clear the selection of the player (and restore it)
+				core.playerSelections.removeGroupFor( cPlayerName , true , cPlayerWorld );
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -133,15 +130,11 @@ public class Copy implements CommandExecutor
 								// Get the block
 								cursorBlock = cPlayerWorld.getBlockAt( blockX , blockY , blockZ );
 								
-								// Record the data
-								blocksToStore.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+								// Record the data into the clip-board
+								clipBoard.addBlock( cursorBlock );
 							}
 						}
 					}
-					
-					// Add to the clip-board of the player
-					core.playerCopy.pushGroupFor( cPlayerName , blocksToStore );
-					blocksToStore = null;
 					
 					// Output that the selection was copied
 					cPlayer.sendMessage( core.TAG_POSITIVE + "Selection Copied" );
@@ -163,15 +156,11 @@ public class Copy implements CommandExecutor
 								if( cursorBlock.getTypeId() != 0 )
 								{
 									// Record the data
-									blocksToStore.addBlock( blockX , blockY , blockZ , cursorBlock.getTypeId() , cursorBlock.getData() );
+									clipBoard.addBlock( cursorBlock );
 								}
 							}
 						}
 					}
-					
-					// Add to the clipboard of the player
-					core.playerCopy.pushGroupFor( cPlayerName , blocksToStore );
-					blocksToStore = null;
 					
 					// Output that the selection was copied
 					cPlayer.sendMessage( core.TAG_POSITIVE + "Selection Copied" );

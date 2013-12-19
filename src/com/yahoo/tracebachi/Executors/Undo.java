@@ -30,17 +30,14 @@ public class Undo implements CommandExecutor
 	@Override
 	public boolean onCommand( CommandSender client, Command cmd , String label, String[] cmdArgs )
 	{
-		
 		// Check for command
 		if( cmd.getName().equalsIgnoreCase( "undo" ) )
 		{
-			
 			// Check if the client is a player
 			if( client instanceof Player )
 			{
-				
-				// Set up the player variables
-				Player commandSender = (Player) client;
+				// Initialize variables
+				Player sender = (Player) client;
 				
 				// Check if there is a second argument
 				if( cmdArgs.length == 1 )
@@ -49,36 +46,28 @@ public class Undo implements CommandExecutor
 					//----------- Undo All -------------------------------------------------//
 					if( cmdArgs[ 0 ].equalsIgnoreCase( "all" ) )
 					{
-						// Initialize a counter
-						int counter = 0;
-						
-						// Undo all edits
-						while( core.playerUndo.revertBlocksFor( commandSender.getName() ) )
-						{
-							// Increment the counter
-							counter++;
-						}
-						
-						// Tell the player of completion
-						commandSender.sendMessage( core.TAG_POSITIVE + "Undo of " + 
-							ChatColor.LIGHT_PURPLE + counter + ChatColor.GREEN + " Complete." );	
+						// Tell the player how many were restored
+						sender.sendMessage( core.TAG_POSITIVE + "Undo of " + 
+							ChatColor.LIGHT_PURPLE + 
+							core.playerUndo.removePlayer( sender.getName() , true , sender.getWorld() )
+							+ ChatColor.GREEN + " Complete." );	
 					}
 					//----------------------------------------------------------------------//
-					//----------- Undo Clear -----------------------------------------------//
+					//----------- Undo Final -----------------------------------------------//
 					else if( cmdArgs[ 0 ].equalsIgnoreCase( "final" ) )
 					{
-						// Clear all the storage for undo
-						core.playerUndo.clearBlocksFor( commandSender.getName() );
+						// Clear all the storage for undo without restoring
+						core.playerUndo.removePlayer( sender.getName() , false , sender.getWorld() );
 					}
 					//----------------------------------------------------------------------//
 					//----------- Undo Help ------------------------------------------------//
 					else
 					{
 						// Output possible commands
-						commandSender.sendMessage(  ChatColor.YELLOW + "The possible commands are:" );
-						commandSender.sendMessage(  ChatColor.GREEN + "    /undo (to undo one edit)" );
-						commandSender.sendMessage(  ChatColor.GREEN + "    /undo all (to undo all edits)" );
-						commandSender.sendMessage(  ChatColor.GREEN + "    /undo final (to finalize all saved undos)" );
+						sender.sendMessage(  ChatColor.YELLOW + "The possible commands are:" );
+						sender.sendMessage(  ChatColor.GREEN + "    /undo (to undo one edit)" );
+						sender.sendMessage(  ChatColor.GREEN + "    /undo all (to undo all edits)" );
+						sender.sendMessage(  ChatColor.GREEN + "    /undo final (to finalize all saved undos)" );
 					}
 						
 				}
@@ -86,16 +75,20 @@ public class Undo implements CommandExecutor
 				//----------- Undo ----------------------------------------------------------//
 				else
 				{
-					// Check if the list is null
-					if( core.playerUndo.revertBlocksFor( commandSender.getName() ) )
+					// Check if the returned group is not null
+					if( core.playerUndo.peekGroupFor( sender.getName() ) != null )
 					{
+						// Pop the group and restore it + clear it
+						// At the end of the function, the reference is lost
+						core.playerUndo.popGroupFor( sender.getName() ).restoreBlocks( sender.getWorld() , true );
+						
 						// Tell the player there was an undo of one step
-						commandSender.sendMessage( core.TAG_POSITIVE + "Undo of 1 Complete." );	
+						sender.sendMessage( core.TAG_POSITIVE + "Undo of 1 Complete." );	
 					}
 					else
 					{
 						// Tell the player there was nothing to undo
-						commandSender.sendMessage( core.ERROR_NO_UNDO );	
+						sender.sendMessage( core.ERROR_NO_UNDO );	
 					}
 				}
 			}
@@ -111,21 +104,21 @@ public class Undo implements CommandExecutor
 			if( client instanceof Player )
 			{
 				// Cast the client as a player
-				Player commandSender = (Player) client;
+				Player sender = (Player) client;
 				
 				// Verify the permissions of the client
-				if( core.verifyPerm( commandSender , "SquareRemoveChunk" ) )
+				if( core.verifyPerm( sender , "SquareRemoveChunk" ) )
 				{
-					// Clear all undo storage
-					core.playerUndo.clearAllStoredBlocks();
+					// Clear all undo storage by closing the manager
+					core.playerUndo.closeManager();
 					core.getLogger().info( "Undo storage for all players cleared." );
 					return true;
 				}
 			}
 			else
 			{
-				// Clear undo storage
-				core.playerUndo.clearAllStoredBlocks();
+				// Clear undo storage by closing the manager
+				core.playerUndo.closeManager();
 				core.getLogger().info( "Undo storage for all players cleared." );
 				return true;
 			}

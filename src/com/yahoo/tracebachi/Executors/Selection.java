@@ -1,19 +1,15 @@
 package com.yahoo.tracebachi.Executors;
 
-//import org.bukkit.World;
-//import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-//import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockGroup;
 
-//@SuppressWarnings("deprecation")
 public class Selection implements CommandExecutor
 {
-	
 	// Create the executor's plug-in class instance for linking
 	private Bulldozer core;
 	
@@ -28,7 +24,7 @@ public class Selection implements CommandExecutor
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
-	// Purpose: 	Handles "marker" , "clear" , and "clearall" commands
+	// Purpose: 	Handles "kit" and "clear" commands
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean onCommand( CommandSender client, Command cmd , String label, String[] cmdArgs )
@@ -41,25 +37,25 @@ public class Selection implements CommandExecutor
 			if( client instanceof Player )
 			{
 				// Cast the client as a player
-				Player commandSender = (Player) client;
+				Player sender = (Player) client;
 				
 				// Give the player the tool if they don't have one
-				if( !( commandSender.getInventory().contains( core.selectionTool ) ) )
+				if( !( sender.getInventory().contains( core.selectionTool ) ) )
 				{	
 					// Give
-					commandSender.getInventory().addItem( core.selectionTool );
+					sender.getInventory().addItem( core.selectionTool );
 					
 					// Output that the marker and paste tool was given
-					commandSender.sendMessage( core.TAG_POSITIVE + "Given \"Marker.\"" );
+					sender.sendMessage( core.TAG_POSITIVE + "Given \"Marker.\"" );
 				}
 				// Give the player the tool if they don't have one
-				if( !( commandSender.getInventory().contains( core.pasteTool ) ) )
+				if( !( sender.getInventory().contains( core.pasteTool ) ) )
 				{	
 					// Give
-					commandSender.getInventory().addItem( core.pasteTool );
+					sender.getInventory().addItem( core.pasteTool );
 					
 					// Output that the marker and paste tool was given
-					commandSender.sendMessage( core.TAG_POSITIVE + "Given \"Paste Wand.\"" );
+					sender.sendMessage( core.TAG_POSITIVE + "Given \"Paste Wand.\"" );
 				}
 				return true;
 			}
@@ -71,55 +67,33 @@ public class Selection implements CommandExecutor
 			// Check if the client is a player
 			if( client instanceof Player )
 			{
-				// Cast the client as a player
-				Player commandSender = (Player) client;
-
-				// Clear the clipboard
-				core.playerCopy.clearBlocksFor( commandSender.getName() );
+				// Initialize variables
+				Player sender = (Player) client;
+				BlockGroup group = null;
 				
 				// Clear the selection
-				if( core.playerSelections.removeSelectionFor( commandSender.getName() ) )
+				group = core.playerSelections.getGroupFor( sender.getName() );
+				if( ! group.isEmpty() )
 				{
-					// Output that the selection has been wiped
-					commandSender.sendMessage( core.TAG_POSITIVE + "Selection and Clipboard Cleared" );
+					// Clear the selection (needs restore)
+					core.playerSelections.removeGroupFor( sender.getName() , true ,  sender.getWorld() );
+					
+					// Notify the player
+					sender.sendMessage( core.TAG_POSITIVE + "Selection Cleared" );
 				}
-				else
+				
+				// Clear the clipboard
+				group = core.playerCopy.getGroupFor( sender.getName() );
+				if( ! group.isEmpty() )
 				{
-					// Output that the selection has been wiped
-					commandSender.sendMessage( core.TAG_NEGATIVE + "Clipboard cleared, but Selection was already Cleared" );
+					// Clear the clipboard (doesn't need a restore)
+					core.playerCopy.removeGroupFor( sender.getName() , false ,  sender.getWorld() );
+					
+					// Notify the player
+					sender.sendMessage( core.TAG_POSITIVE + "Clipboard Cleared" );
 				}
 				
 				// Return
-				return true;
-			}
-		}
-		//-------------------------------------------------------------------------------------//
-		//----------- Clear All ---------------------------------------------------------------//
-		else if ( cmd.getName().equalsIgnoreCase( "clearall" ) )
-		{
-			// Check if the client has permission
-			if( client instanceof Player )
-			{
-				// Cast the client as a player
-				Player commandSender = (Player) client;
-				
-				// Verify the permissions of the client
-				if( core.verifyPerm( commandSender , "SquareRemoveChunk" ) )
-				{
-					// Clear all selections
-					core.playerSelections.removeAll();
-					core.getLogger().info( "All player selections cleared." );
-					return true;
-				}
-				
-				// Otherwise return false
-				return false;
-			}
-			else
-			{
-				// Clear selection
-				core.playerSelections.removeAll();
-				core.getLogger().info( "All player selections cleared." );
 				return true;
 			}
 		}

@@ -14,7 +14,6 @@ import com.yahoo.tracebachi.Utils.BlockGroup;
 @SuppressWarnings("deprecation")
 public class Cone implements CommandExecutor 
 {
-
 	// Class variables
 	private Bulldozer core = null;
 	
@@ -25,7 +24,6 @@ public class Cone implements CommandExecutor
 	{	
 		core = instance;
 	}
-
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -47,9 +45,9 @@ public class Cone implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName() ;
-				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getGroupFor( cPlayerName );
 				BlockGroup blocksToStore = null;
-				Block firstBlock = null;
+				int[] firstBlock = new int[5];
 				
 				int height = 0 , cylRadius = 0;
 				int[] desiredBlockID = new int[2];
@@ -67,7 +65,7 @@ public class Cone implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Two: Verify Player has a selection ---------------------------------//
-				if( cPlayerSelection == null )
+				if( cPlayerSelection.isEmpty() )
 				{
 					cPlayer.sendMessage( core.ERROR_SELECTION );
 					return true;
@@ -83,7 +81,7 @@ public class Cone implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				firstBlock = cPlayerSelection.getFirst();
+				firstBlock = cPlayerSelection.get( 0 );
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -92,7 +90,7 @@ public class Cone implements CommandExecutor
 					switch( argLen )
 					{
 						case 4:
-							height = core.safeInt( commandArgs[3] , 5 - firstBlock.getY() , 254 - firstBlock.getY() );
+							height = core.safeInt( commandArgs[3] , 5 - firstBlock[1] , 254 - firstBlock[1] );
 						case 3:
 							cylRadius = core.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
@@ -114,14 +112,14 @@ public class Cone implements CommandExecutor
 				if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 							
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledCone( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() , 
+							firstBlock[0] , firstBlock[1] , firstBlock[2] , 
 							height , cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
@@ -137,14 +135,14 @@ public class Cone implements CommandExecutor
 				else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowCone( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() , 
+						firstBlock[0] , firstBlock[1] , firstBlock[2] , 
 							height , cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks

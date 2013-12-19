@@ -7,104 +7,130 @@ import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
+/**
+ * BlockGroup <p>
+ * Used for storage of data pertaining to a single group of blocks. <p>
+ * 
+ * @author Alias: TheCriticalError
+ */
 @SuppressWarnings("deprecation")
 public class BlockGroup
 {
 			
 	// Class Variables
 	private List< BlockInfo > blockInfoList = null;
-	private World groupWorld = null;
 	
 	// Key Block: The block from which the offsets for pasting is determined
-	private int keyblockX , keyblockY , keyblockZ;
+	private int keyX , keyY , keyZ;
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	BlockGroup Default Constructor
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public BlockGroup( World blockWorld )
+	/**
+	 * Constructs the BlockGroup object with a new ArrayList of BlockInfo.
+	 */
+	public BlockGroup()
 	{
 		// Create the blockInfoList
 		blockInfoList = new ArrayList< BlockInfo >();
 		
-		// Create a reference to the world
-		groupWorld = blockWorld;
+		// Initialize the key variables
+		keyX = keyY = keyZ = 0;
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	addBlock
-	// Purpose: 	Add a block to the group based of specific data
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public boolean addBlock( int blockX , int blockY , int blockZ , int blockType , byte blockSubType )
+	/**
+	 * Constructs, allocates, and inserts a new {@link BlockInfo} object with 
+	 * the parameters passed to the method. <p>
+	 * 
+	 * @param x		: X-Coordinate of the block
+	 * @param y		: Y-Coordinate of the block
+	 * @param z		: Z-Coordinate of the block
+	 * @param type		: Main ID of the block
+	 * @param subType	: Data of the block
+	 * 
+	 * @return Boolean value indicating true if the block info was inserted 
+	 * into the list or false if not.
+	 */
+	public boolean addBlock( int x , int y , int z , int type , byte subType )
 	{
 		// Add it to the blockInfoList
-		return blockInfoList.add( new BlockInfo( blockX , blockY , blockZ , blockType , blockSubType ) );
+		return blockInfoList.add( new BlockInfo( x , y , z , type , subType ) );
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	addBlock
-	// Purpose: 	Add a block to the group based of the passed block
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Constructs, allocates, and inserts a new {@link BlockInfo} object from 
+	 * the x, y, and z coordinates, block ID, and block data of the block object. <p>
+	 * 
+	 * @param toAdd	: Block object
+	 * 
+	 * @return Boolean value indicating true if the block info was inserted 
+	 * into the list or false if not.
+	 */
 	public boolean addBlock( Block toAdd )
 	{
 		// Add it to the blockInfoList
 		return blockInfoList.add( new BlockInfo( toAdd.getX() , toAdd.getY() , toAdd.getZ() , toAdd.getTypeId() , toAdd.getData() ) );
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	addBlock
-	// Purpose: 	Add a block to the group based of specific data
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public boolean addBlockAndChange( Block toAdd , int newID , byte newData )
+	/**
+	 * Constructs, allocates, and inserts a new {@link BlockInfo} object with
+	 * the information of the passed Block object. However, the block's type
+	 * and subType are changed on the server with the values passed to 
+	 * the function. <p>
+	 * 
+	 * @param toAdd	: Block object
+	 * @param type		: Main ID of the block after the original is stored
+	 * @param subType	: SubID of the block after the original is stored
+	 */
+	public void addBlockAndChange( Block toAdd , int type , byte subType )
 	{
-		// Store the original ID in a temp
-		int tempID = toAdd.getTypeId();
-		byte tempData = toAdd.getData();
+		// Add the original values to the blockInfoList
+		blockInfoList.add( new BlockInfo( toAdd.getX() , toAdd.getY() , toAdd.getZ() , toAdd.getTypeId() , toAdd.getData() ) );
 		
 		// Modify the block
-		toAdd.setTypeId( newID );
-		toAdd.setData( newData );
-		
-		// Add the original values to the blockInfoList
-		return blockInfoList.add( new BlockInfo( toAdd.getX() , toAdd.getY() , toAdd.getZ() , tempID , tempData ) );
+		toAdd.setTypeId( type );
+		toAdd.setData( subType );
 	}
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method:	setKeyBlock
-	// Purpose:	Set the data of the key block for relative position based procedures
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public void setKeyBlock( Block toSet )
+	/**
+	 * Sets the x, y, and z coordinates (key coordinates) used for relative load
+	 * and paste operations from the passed block object. <p>
+	 * 
+	 * @param srcBlock	: Block object
+	 */
+	public void setKeyBlock( Block srcBlock )
 	{
 		// Set the values
-		keyblockX = toSet.getX();
-		keyblockY = toSet.getY();
-		keyblockZ = toSet.getZ();
+		keyX = srcBlock.getX();
+		keyY = srcBlock.getY();
+		keyZ = srcBlock.getZ();
 	}
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method:	setKeyBlock
-	// Purpose:	Set the data of the key block for relative position based procedures from
-	//			singular values
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public void setKeyBlock( int blockX , int blockY , int blockZ )
+	/**
+	 * Sets the x, y, and z coordinates (key coordinates) used for relative load
+	 * and paste operations from the integers passed to the function. <p>
+	 * 
+	 * @param x	: X-Coordinate
+	 * @param y	: Y-Coordinate
+	 * @param z	: Z-Coordinate
+	 */
+	public void setKeyBlock( int x , int y , int z )
 	{
 		// Set the values
-		keyblockX = blockX;
-		keyblockY = blockY;
-		keyblockZ = blockZ;
+		keyX = x;
+		keyY = y;
+		keyZ = z;
 	}
-	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method:	getKeyBlock
-	// Purpose:	Return the key block in the world
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Block getKeyBlock()
+
+	/**
+	 * Fetches the block in the passed world corresponding with the key values 
+	 * stored in the class. <p>
+	 * 
+	 * @param playerWorld	: World to fetch the block from
+	 * 
+	 * @return A block object that represents the "key" block.
+	 */
+	public Block getKeyBlock( World playerWorld )
 	{
 		// Set the values
-		return groupWorld.getBlockAt( keyblockX , keyblockY , keyblockZ );
+		return playerWorld.getBlockAt( keyX , keyY , keyZ );
 	}
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -114,7 +140,7 @@ public class BlockGroup
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	public void updateSelection()
 	{
-		// Initialize variables
+		/*// Initialize variables
 		int size = blockInfoList.size();
 		Block cursorBlock = null;
 		BlockInfo node = null;
@@ -157,79 +183,88 @@ public class BlockGroup
 			
 			// Set to gold
 			cursorBlock.setTypeId( 20 );
-		}
+		}*/
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	revertBlocks
-	// Purpose: 	Revert the blocks to their original IDs and locations
-	// 			Additional: If 'clearList' is true, clear the list
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public boolean revertBlocks( boolean clearList )
+	/**
+	 * Using the list stored in the class, this method restores all blocks into
+	 * their original positions in the world that was passed to the function.
+	 * If the clearList boolean is true, the list will be wiped on exit from
+	 * this function. <p>
+	 * 
+	 * @param playerWorld	: World to place blocks in
+	 * @param clearList		: Boolean instructing on whether or not to clear the 
+	 * 						list on exit
+	 */
+	public void restoreBlocks( World playerWorld , boolean clearList )
 	{
 		// Method variables
-		int blockInfoListSize = blockInfoList.size();
-		BlockInfo cursorNode = null;
+		int size = blockInfoList.size();
+		BlockInfo node = null;
 		Block cursorBlock = null;
 		
 		// Loop through the blockInfoList
-		for( int iter = 0 ; iter < blockInfoListSize ; iter++ )
+		for( int iter = 0 ; iter < size ; iter++ )
 		{
 			// Get the block
-			cursorNode = blockInfoList.get( iter );
-			cursorBlock = groupWorld.getBlockAt( cursorNode.xPos , cursorNode.yPos , cursorNode.zPos );
+			node = blockInfoList.get( iter );
+			cursorBlock = playerWorld.getBlockAt( node.xPos , node.yPos , node.zPos );
 			
 			// Revert the block
-			cursorBlock.setTypeId( cursorNode.blockID );
-			cursorBlock.setData( cursorNode.blockSubID );
+			cursorBlock.setTypeId( node.blockID );
+			cursorBlock.setData( node.blockSubID );
 		}
 		
 		// Check the 'clearList' boolean
-		if( clearList ) { clearBlocks(); }
-		
-		// Always return true
-		return true;
+		if( clearList ) { clearBlockInfo(); }
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	pasteBlocks
-	// Purpose: 	Recreate the blocks from the group starting from the passed start point
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public BlockGroup duplicateBlocks( int startX , int startY , int startZ )
+	/**
+	 * Recreates the blocks from the stored list by subtracting the key values
+	 * of the class from the passed values in order to establish an offset
+	 * for each of the coordinates. Using this offset value, a loop through
+	 * the list stores the current state of each of the blocks at the same
+	 * coordinates in a temporary BlockGroup object. Once the list loop
+	 * has completed, the temporary BlockGroup is returned. <p>
+	 * 
+	 * @param playerWorld	: World to place the blocks in
+	 * @param x			: Starting X-Coordinate
+	 * @param y			: Starting Y-Coordinate
+	 * @param z			: Starting Z-Coordinate
+	 * 
+	 * @return BlockGroup containing all the blocks that were edited by
+	 * the recreation from the current class's block information list.
+	 */
+	public BlockGroup recreateAt( World playerWorld, int x , int y , int z )
 	{
 		// Method variables
 		int blockInfoListSize = blockInfoList.size();
 		int offX , offY , offZ;
-		BlockGroup toReturn = null;
-		BlockInfo infoNode = null;
+		BlockGroup toReturn = new BlockGroup();
+		BlockInfo node = null;
 		Block cursorBlock = null;
 		
 		// Verify the list is not empty
 		if( ! blockInfoList.isEmpty() )
 		{
-			// Initialize the block group to return
-			toReturn = new BlockGroup( groupWorld );
-			
 			// Figure out the offset
-			offX = startX - keyblockX;
-			offY = startY - keyblockY;
-			offZ = startZ - keyblockZ;
+			offX = x - keyX;
+			offY = y - keyY;
+			offZ = z - keyZ;
 			
 			// Loop through the blockInfoList
 			for( int iter = 0 ; iter < blockInfoListSize ; iter++ )
 			{
 				// Get the block
-				infoNode = blockInfoList.get( iter );
-				cursorBlock = groupWorld.getBlockAt( infoNode.xPos + offX , infoNode.yPos + offY , infoNode.zPos + offZ );
+				node = blockInfoList.get( iter );
+				cursorBlock = playerWorld.getBlockAt( node.xPos + offX , node.yPos + offY , node.zPos + offZ );
 				
 				// Add to the group
 				toReturn.addBlock( cursorBlock );
 				
 				// Change the block
-				cursorBlock.setTypeId( infoNode.blockID );
-				cursorBlock.setData( infoNode.blockSubID );
+				cursorBlock.setTypeId( node.blockID );
+				cursorBlock.setData( node.blockSubID );
 			}
 		}
 		
@@ -237,12 +272,12 @@ public class BlockGroup
 		return toReturn;
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	getSize
-	// Purpose: 	Return the integer size of the list
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public int getSize()
+	/**
+	 * Returns the size of the {@link BlockInfo} list in the class. <p>
+	 * 
+	 * @return The long value of the number of blocks stored in the list.
+	 */
+	public long getSize()
 	{	
 		// Method variables
 		int sizeVal = 0;
@@ -257,50 +292,105 @@ public class BlockGroup
 		// Return 0 otherwise
 		return sizeVal;
 	}
-
-
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	getFirst
-	// Purpose: 	Get the first block in the list if the list is not empty
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Block getFirst()
+	
+	/**
+	 * Creates a deep copy of the current BlockGroup object. <p>
+	 * 
+	 * @return A new BlockGroup object identical to the one on which the 
+	 * function was called.
+	 */
+	public BlockGroup getCopy()
 	{	
 		// Method variables
-		BlockInfo infoNode = null;
+		int size = blockInfoList.size();
+		BlockInfo node = null;
+		BlockGroup toReturn = new BlockGroup();
 		
-		// If the list is not empty
-		if( !isEmpty() )
+		// Copy the key block
+		toReturn.keyX = keyX;
+		toReturn.keyY = keyY;
+		toReturn.keyZ = keyZ;
+		
+		// Loop through the list and copy
+		for( int i = 0 ; i < size ; i++ )
 		{
-			// Get the first block in the list
-			infoNode = blockInfoList.get(0);
+			// Get the node
+			node = blockInfoList.get( i );
 			
-			// Return the first block
-			return groupWorld.getBlockAt( infoNode.xPos , infoNode.yPos , infoNode.zPos );
+			// Push a copy of the data into the group
+			toReturn.addBlock( node.xPos , node.yPos , node.zPos , node.blockID , node.blockSubID );
 		}
-
-		// Return the null block otherwise
-		return null;
+	
+		// Return the copied group otherwise
+		return toReturn;
 	}
 	
+	/**
+	 * Fetches the BlockInfo at the {@code index} position in the list. This
+	 * information is stored in an integer array of size five and returned
+	 * to the caller. <p>
+	 * 
+	 * @param index	: Position of the BlockInfo from which the results
+	 * are desired. If index is out of bounds, the list will throw an exception.
+	 * 
+	 * @return An integer array (all 0 by default) containing:
+	 * <ul> 
+	 * <li>At [0], X-Coordinate </li>
+	 * <li>At [1], Y-Coordinate </li>
+	 * <li>At [2], Z-Coordinate </li>
+	 * <li>At [3], Type ID </li>
+	 * <li>At [4], Sub-Type </li>
+	 * </ul>
+	 */
+	public int[] get( int index )
+	{	
+		// Method variables
+		int[] toReturn = new int[5];
+		BlockInfo node = null;
+		
+		// If the list is not empty
+		if( index < blockInfoList.size() )
+		{
+			// Get the first block in the list
+			node = blockInfoList.get( index );
+			
+			// Copy the data
+			toReturn[0] = node.xPos - keyX;
+			toReturn[1] = node.yPos - keyY;
+			toReturn[2] = node.zPos - keyZ;
+			
+			toReturn[3] = node.blockID;
+			toReturn[4] = node.blockSubID;
+			
+			// Return the first block
+			return toReturn;
+		}
+
+		// Return the empty array (Java: arrays are 0 by default)
+		return toReturn;
+	}
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	getMaximums
-	// Purpose: 	Loop through the list and return the highest values
-	// Return:	Returns null if empty list, array of highest values otherwise
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Loops through the list and searches for the highest values for the
+	 * x, y, and z coordinates. The results are returned stored in an integer
+	 * array of size three. <p>
+	 * 
+	 * @return An array (all default to 0) containing:
+	 * <ul> 
+	 * <li>At [0], X-Coordinate </li>
+	 * <li>At [1], Y-Coordinate </li>
+	 * <li>At [2], Z-Coordinate </li>
+	 * </ul>
+	 */
 	public int[] getMaximums()
 	{
 		// Initialize variables
-		int listSize, compareVal;
-		int[] toReturn = null;
+		int listSize = blockInfoList.size(), compareVal;
+		int[] toReturn = new int[3];
 		
 		// Check if the list empty
 		if( !isEmpty() )
 		{
-			// Set the size and initialize the return array
-			listSize = blockInfoList.size();
-			toReturn = new int[3];
-			
 			// Set the initial values
 			toReturn[0] = blockInfoList.get(0).xPos;
 			toReturn[1] = blockInfoList.get(0).yPos;
@@ -327,25 +417,27 @@ public class BlockGroup
 		return toReturn;
 	}
 
-
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	getMinimums
-	// Purpose: 	Loop through the list and return the lowest values
-	// Return:	Returns null if empty list, array of lowest values otherwise
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Loops through the list and searches for the lowest values for the
+	 * x, y, and z coordinates. The results are returned stored in an integer
+	 * array of size three. <p>
+	 * 
+	 * @return An array (all default to 0) containing:
+	 * <ul> 
+	 * <li>At [0], X-Coordinate </li>
+	 * <li>At [1], Y-Coordinate </li>
+	 * <li>At [2], Z-Coordinate </li>
+	 * </ul>
+	 */
 	public int[] getMinimums()
 	{
 		// Initialize variables
-		int listSize, compareVal;
-		int[] toReturn = null;
+		int listSize = blockInfoList.size(), compareVal;
+		int[] toReturn = new int[3];
 		
 		// Check if the list empty
 		if( !isEmpty() )
 		{
-			// Set the size and initialize the return array
-			listSize = blockInfoList.size();
-			toReturn = new int[3];
-			
 			// Set the initial values
 			toReturn[0] = blockInfoList.get(0).xPos;
 			toReturn[1] = blockInfoList.get(0).yPos;
@@ -372,66 +464,75 @@ public class BlockGroup
 		return toReturn;
 	}
 
-
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	getChunkOfBlock
-	// Purpose: 	Get the chunk belonging to the block at the 'blockInList' position of the list 
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Chunk getChunkOfBlock( int blockInList )
+	/**
+	 * Fetches the chunk of the passed world that contains the Block specified
+	 * by the BlockInfo at the {@code index} position. The Block is
+	 * reconstructed from the information and the passed world. The
+	 * chunk returned is gathered by calling the chunk method of the
+	 * block. <p>
+	 * 
+	 * @param playerWorld	: World to fetch the block from
+	 * @param index		: Index of the desired BlockInfo. If index is out 
+	 * of bounds, the list will throw an exception.
+	 * 
+	 * @return Reference to the chunk that contained the block specified by
+	 * the BlockInfo in the list at {@code index}. If the index is negative, a
+	 * null chunk will be returned, but an exception will be thrown before
+	 * that.
+	 */
+	public Chunk getChunkOfBlock( World playerWorld , int index )
 	{	
 		// Method variables
 		BlockInfo node = null;
 		
 		// If the list is not empty
-		if( !isEmpty() && (blockInList < blockInfoList.size()) )
+		if( index < blockInfoList.size() )
 		{
 			// Get the i block in the list
-			node = blockInfoList.get( blockInList );
+			node = blockInfoList.get( index );
 			
 			// Return the chunk containing the block
-			return groupWorld.getBlockAt( node.xPos , node.yPos , node.zPos ).getChunk();
+			return playerWorld.getBlockAt( node.xPos , node.yPos , node.zPos ).getChunk();
 		}
 
 		// Return the null chunk otherwise
 		return null;
 	}
-	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	isEmpty
-	// Purpose: 	Returns true if the group-list is empty or null
-	//////////////////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Returns if the BlockGroup's BlockInfo list is empty. The function is a 
+	 * wrapper for the list's isEmpty function. <p>
+	 * 
+	 * @return Boolean value of true if the BlockInfo list is empty and false if not.
+	 */
 	public boolean isEmpty()
 	{
 		// Return if the list is empty or not
 		return blockInfoList.isEmpty();
 	}
-	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	clearAllBlocks
-	// Purpose: 	Remove all the blocks from the group
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public boolean clearBlocks()
+
+	/**
+	 * Clears the list of BlockInfo regardless of whether or not the list is 
+	 * already empty or not. <p>
+	 */
+	public void clearBlockInfo()
 	{
 		// Clear the blockInfoList
-		if( blockInfoList != null ) 
-		{ 
-			blockInfoList.clear();
-		}
-		
-		// Remove the reference to the world
-		groupWorld = null;
-		
-		// Return for completion
-		return true;
+		blockInfoList.clear();
 	}
 	
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Class: 	Block Info
-	// Purpose: 	Store Block Data
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * Data object containing all relevant information for a Block without
+	 * the large storage overhead. Elements include: <p>
+	 * 
+	 * <ul>
+	 * <li>X-Coordinate</li>
+	 * <li>Y-Coordinate</li>
+	 * <li>Z-Coordinate</li>
+	 * <li>Block ID</li>
+	 * <li>Block SubID</li>
+	 * </ul>
+	 */
 	private class BlockInfo
 	{
 		// Class Variables
@@ -441,16 +542,22 @@ public class BlockGroup
 		public int blockID = 0 ;
 		public byte blockSubID = 0 ;
 		
-		////////////////////////////////////////////////////////////////////////////////////
-		// Method: 	BlockInfo Default Constructor
-		// Purpose: 	Construct and store all the block information
-		////////////////////////////////////////////////////////////////////////////////////
-		public BlockInfo( int blockX , int blockY , int blockZ , int blockType , byte blockSubType )
+		/**
+		 * Copies the data passed to the constructor into the object's
+		 * private internal variable storage. <p>
+		 * 
+		 * @param x		: X-Coordinate
+		 * @param y		: Y-Coordinate
+		 * @param z		: Z-Coordinate
+		 * @param type		: Block ID
+		 * @param subType	: Block SubID (for materials with states)
+		 */
+		public BlockInfo( int x , int y , int z , int type , byte subType )
 		{
 			// Copy over the values
-			xPos = blockX ; yPos = blockY ; zPos = blockZ ;
-			blockID = blockType ;
-			blockSubID = blockSubType ;
+			xPos = x ; yPos = y ; zPos = z ;
+			blockID = type ;
+			blockSubID = subType ;
 		}
 	}
 			

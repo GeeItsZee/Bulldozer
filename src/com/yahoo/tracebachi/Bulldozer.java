@@ -19,11 +19,12 @@ import com.yahoo.tracebachi.Executors.Copy;
 import com.yahoo.tracebachi.Executors.Cylinder;
 import com.yahoo.tracebachi.Executors.Load;
 import com.yahoo.tracebachi.Executors.Replace;
+import com.yahoo.tracebachi.Executors.Save;
 import com.yahoo.tracebachi.Executors.Selection;
 import com.yahoo.tracebachi.Executors.Sphere;
 import com.yahoo.tracebachi.Executors.Undo;
-import com.yahoo.tracebachi.Utils.BlockGroupManager;
-import com.yahoo.tracebachi.Utils.SelectionManager;
+import com.yahoo.tracebachi.Utils.MultiBlockGroupManager;
+import com.yahoo.tracebachi.Utils.SingleBlockGroupManager;
 
 public class Bulldozer extends JavaPlugin
 {
@@ -35,9 +36,9 @@ public class Bulldozer extends JavaPlugin
 	public ItemMeta pasteToolMeta = pasteTool.getItemMeta();
 	
 	// Initialize the utilities
-	public SelectionManager playerSelections = null;
-	public BlockGroupManager playerUndo = null;
-	public BlockGroupManager playerCopy = null;
+	public SingleBlockGroupManager playerSelections = null;
+	public SingleBlockGroupManager playerCopy = null;
+	public MultiBlockGroupManager playerUndo = null;
 	public ExecutorService asyncExec = null;
 	
 	// Initialize message strings
@@ -55,9 +56,9 @@ public class Bulldozer extends JavaPlugin
 	public void onEnable()
 	{
 		// Utility Setup
-		playerSelections = new SelectionManager();
-		playerUndo = new BlockGroupManager();
-		playerCopy = new BlockGroupManager();
+		playerSelections = new SingleBlockGroupManager();
+		playerCopy = new SingleBlockGroupManager();
+		playerUndo = new MultiBlockGroupManager();
 		asyncExec = Executors.newFixedThreadPool( 5 );
 	
 		// Set up the custom item
@@ -88,13 +89,15 @@ public class Bulldozer extends JavaPlugin
 		Selection selectExec = new Selection( this );
 		getCommand( "kit" ).setExecutor( selectExec );
 		getCommand( "clear" ).setExecutor( selectExec );
-		getCommand( "clearall" ).setExecutor( selectExec );
 		
 		// Initialize the copy command executor
 		getCommand( "copy" ).setExecutor( new Copy( this ) );
 		
 		// Initialize the load command executor
 		getCommand( "load" ).setExecutor( new Load( this ) );
+		
+		// Initialize the save command executor
+		getCommand( "save" ).setExecutor( new Save( this ) );
 		
 		// Initialize the undo command executor
 		Undo undoExec = new Undo( this );
@@ -116,7 +119,7 @@ public class Bulldozer extends JavaPlugin
 		asyncExec.shutdownNow();
 		
 		// Disable the selection manager
-		playerSelections.removeAll();
+		playerSelections.closeManager();
 		playerSelections = null;
 		
 		// Clear the block storage

@@ -23,15 +23,15 @@ commands:
   load:
     description: Load blocks from a file
     usage: §bIncorrect Command. For help, type /load
+  save:
+    description: Save blocks to a file
+    usage: §bIncorrect Command. For help, type /save
   kit:
     description: Gives you the selection tool and a pasting tool.
     usage: /kit
   clear:
     description: Clears your selection.
     usage: /clear
-  clearall:
-    description: Clears the selection for all players in the Server.
-    usage: /clearall
   border:
     description: Make a border around the edges of the selection.
     usage: §bIncorrect Command. For help, type /border

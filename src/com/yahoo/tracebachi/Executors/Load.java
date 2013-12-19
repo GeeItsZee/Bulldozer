@@ -14,8 +14,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.ThreadTasks.FileLoader;
-import com.yahoo.tracebachi.ThreadTasks.SyncStatus;
+import com.yahoo.tracebachi.ThreadTasks.FileInput_Block;
+import com.yahoo.tracebachi.ThreadTasks.FileStatus;
 import com.yahoo.tracebachi.Utils.BlockGroup;
 
 
@@ -52,6 +52,7 @@ public class Load implements CommandExecutor
 			{
 				// Create/Set variables
 				Player cPlayer = (Player) client;
+				BlockGroup container = core.playerCopy.getGroupFor( cPlayer.getName() );
 				File fileToOpen = null; 
 				Scanner fileScan = null;
 				
@@ -79,10 +80,8 @@ public class Load implements CommandExecutor
 				//----------- Load the full file --------------------------------------------//
 				if( commandArgs[0].equalsIgnoreCase( "-y" ) )
 				{
-					// Initialize variables 
-					int numLoad = 0;
-					Future< BlockGroup > threadResult = null;
-					BlockGroup container = new BlockGroup( cPlayer.getWorld() );
+					// Initialize Future
+					Future< Boolean > threadResult = null;
 					
 					// Set the file to open
 					fileToOpen = new File( core.PLAN_FOLDER + commandArgs[1] + ".arch" );
@@ -102,12 +101,11 @@ public class Load implements CommandExecutor
 					
 					// Run asynchronous file read
 					fileScan.nextLine();
-					numLoad = fileScan.nextInt();
-					threadResult = core.asyncExec.submit( new FileLoader( fileScan , container , numLoad ) );
+					threadResult = core.asyncExec.submit( new FileInput_Block( fileScan , container , fileScan.nextInt() ) );
 					
 					// Run a synchronous status informer
 					core.getServer().getScheduler().runTask( core , 
-						new SyncStatus( threadResult , cPlayer , "File load of \"" + commandArgs[1] + ".arch\"" , core ) );
+						new FileStatus( threadResult , cPlayer , "File load of \"" + commandArgs[1] + ".arch\"" , core ) );
 					
 					// Return true (file will be closed in the thread)
 					return true;

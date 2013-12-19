@@ -47,9 +47,9 @@ public class Sphere implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName() ;
-				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getGroupFor( cPlayerName );
 				BlockGroup blocksToStore = null;
-				Block firstBlock = null;
+				int[] firstBlock = new int[5];
 				
 				int sphereRadius = 0;
 				int[] desiredBlockID = new int[2];
@@ -83,7 +83,7 @@ public class Sphere implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				firstBlock = cPlayerSelection.getFirst();
+				firstBlock = cPlayerSelection.get( 0 );
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -112,14 +112,14 @@ public class Sphere implements CommandExecutor
 				if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 							
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledSphere( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() ,
+							firstBlock[0] , firstBlock[1] , firstBlock[2] ,
 							sphereRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
@@ -135,14 +135,14 @@ public class Sphere implements CommandExecutor
 				else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowSphere( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() , firstBlock.getZ() ,
+							firstBlock[0] , firstBlock[1] , firstBlock[2] ,
 							sphereRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks

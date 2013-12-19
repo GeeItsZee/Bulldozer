@@ -47,9 +47,9 @@ public class Cylinder implements CommandExecutor
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName() ;
-				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getGroupFor( cPlayerName );
 				BlockGroup blocksToStore = null;
-				Block firstBlock = null;
+				int[] firstBlock = new int[5];
 				
 				int lowOffset = 0 , height = 0 , cylRadius = 0;
 				int[] desiredBlockID = new int[2];
@@ -67,7 +67,7 @@ public class Cylinder implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Two: Verify Player has a selection ---------------------------------//
-				if( cPlayerSelection == null )
+				if( cPlayerSelection.isEmpty() )
 				{
 					cPlayer.sendMessage( core.ERROR_SELECTION );
 					return true;
@@ -83,7 +83,7 @@ public class Cylinder implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				firstBlock = cPlayerSelection.getFirst();
+				firstBlock = cPlayerSelection.get( 0 );
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -92,9 +92,9 @@ public class Cylinder implements CommandExecutor
 					switch( argLen )
 					{
 						case 5:
-							lowOffset = core.safeInt( commandArgs[4] , 0 , firstBlock.getY() - 5 );
+							lowOffset = core.safeInt( commandArgs[4] , 0 , firstBlock[2] - 5 );
 						case 4:
-							height = core.safeInt( commandArgs[3] , 0 , 254 - firstBlock.getY() );
+							height = core.safeInt( commandArgs[3] , 0 , 254 - firstBlock[2] );
 						case 3:
 							cylRadius = core.safeInt( commandArgs[2] , 0 , 2000 );
 						case 2:
@@ -116,15 +116,15 @@ public class Cylinder implements CommandExecutor
 				if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 							
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setFilledCyl( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + height , 
+							firstBlock[0] , firstBlock[1] - lowOffset , firstBlock[2] , 
+							firstBlock[1] + height , 
 							cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks
@@ -140,15 +140,15 @@ public class Cylinder implements CommandExecutor
 				else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setHollowCyl( cPlayerWorld , blocksToStore , 
-							firstBlock.getX() , firstBlock.getY() - lowOffset , firstBlock.getZ() , 
-							firstBlock.getY() + height , 
+						firstBlock[0] , firstBlock[1] - lowOffset , firstBlock[2] , 
+						firstBlock[1] + height , 
 							cylRadius , desiredBlockID[0] , (byte) desiredBlockID[1] );
 					
 					// Push the recorded blocks

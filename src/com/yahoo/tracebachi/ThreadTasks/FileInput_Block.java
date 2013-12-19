@@ -6,22 +6,22 @@ import java.util.concurrent.Callable;
 import com.yahoo.tracebachi.Utils.BlockGroup;
 
 
-public class FileLoader implements Callable< BlockGroup >
+public class FileInput_Block implements Callable< Boolean >
 {
 	// Class Variables
-	private Scanner toRead;
-	private BlockGroup loadedBlocks;
+	private Scanner inputFile;
+	private BlockGroup blockContainer;
 	private int numBlocks;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	FileLoader Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public FileLoader( Scanner target , BlockGroup storage , int numToRead )
+	public FileInput_Block( Scanner target , BlockGroup storage , int numToRead )
 	{
 		// Copy variables
-		toRead = target;
+		inputFile = target;
 		numBlocks = numToRead;
-		loadedBlocks = storage;
+		blockContainer = storage;
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
@@ -30,35 +30,35 @@ public class FileLoader implements Callable< BlockGroup >
 	//			stored in the file
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
-	public BlockGroup call() throws Exception
+	public Boolean call() throws Exception
 	{
 		// Initialize variables
 		int tempX , tempY , tempZ , tempID ;
 		byte tempData;
 		
 		// Set the key block
-		loadedBlocks.setKeyBlock( 0 , 0 , 0 );
+		blockContainer.setKeyBlock( 0 , 0 , 0 );
 		
 		// Loop through and add to the storage
 		for( int i = 0 ; i < numBlocks ; i++ )
 		{
 			// Read and save
-			tempX = toRead.nextInt();
-			tempY = toRead.nextInt();
-			tempZ = toRead.nextInt();
+			tempX = inputFile.nextInt();
+			tempY = inputFile.nextInt();
+			tempZ = inputFile.nextInt();
 			
-			tempID = toRead.nextInt();
-			tempData = toRead.nextByte();
+			tempID = inputFile.nextInt();
+			tempData = inputFile.nextByte();
 			
 			// Push into the storage
-			loadedBlocks.addBlock( tempX , tempY , tempZ, tempID , tempData );
+			blockContainer.addBlock( tempX , tempY , tempZ, tempID , tempData );
 		}
 
 		// Close the scanner
-		toRead.close();
+		inputFile.close();
 		
-		// Return the group
-		return loadedBlocks;
+		// Return true through Boolean class
+		return new Boolean( true );
 	}
 
 }

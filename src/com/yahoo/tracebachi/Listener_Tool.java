@@ -1,6 +1,7 @@
 package com.yahoo.tracebachi;
 
 import org.bukkit.ChatColor;
+import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -40,7 +41,7 @@ public class Listener_Tool implements Listener
 						core.verifyPerm( event.getPlayer() , "Select" ) )
 				{
 					// Add it to the selection list
-					core.playerSelections.addSelectionFor( pName , event.getClickedBlock() );
+					core.playerSelections.addBlockFor( pName , event.getClickedBlock() );
 					
 					// Advise the player that the block was added
 					event.getPlayer().sendMessage( core.TAG_POSITIVE + "Block added to the selection." );
@@ -52,11 +53,15 @@ public class Listener_Tool implements Listener
 				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Paste Block" ) && 
 						core.verifyPerm( event.getPlayer() , "Paste" ) )
 				{
-					// Create a temp reference to the group
-					BlockGroup tempGroup = core.playerCopy.duplicateBlocksFor( pName , event.getClickedBlock() );
+					// Initialize variables
+					Block target = event.getClickedBlock();
+					BlockGroup tempGroup = core.playerCopy.getGroupFor( pName );
 					
-					// Store if not null
-					if( tempGroup != null )
+					// Recreate (move the reference)
+					tempGroup = tempGroup.recreateAt( target.getWorld() , target.getX() , target.getY() , target.getZ() );
+					
+					// Store if not empty
+					if( ! tempGroup.isEmpty() )
 					{
 						// Add the paste to the undo storage
 						core.playerUndo.pushGroupFor( pName , tempGroup );

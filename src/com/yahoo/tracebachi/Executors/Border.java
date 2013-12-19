@@ -40,16 +40,14 @@ public class Border implements CommandExecutor
 		// Check the command
 		if( baseCommand.getName().equalsIgnoreCase( "border" ) )
 		{
-				
 			// Check if client is a player
 			if( client instanceof Player )
 			{
-					
 				// Create/Set player variables
 				Player cPlayer = (Player) client;
 				World cPlayerWorld = cPlayer.getWorld();
 				String cPlayerName = cPlayer.getName() ;
-				BlockGroup cPlayerSelection = core.playerSelections.getSelectionFor( cPlayerName );
+				BlockGroup cPlayerSelection = core.playerSelections.getGroupFor( cPlayerName );
 				BlockGroup blocksToStore = null;
 				
 				int[] maxCoord = null , minCoord = null ;
@@ -69,7 +67,7 @@ public class Border implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Two: Verify Player has a selection ---------------------------------//
-				if( cPlayerSelection == null )
+				if( cPlayerSelection.isEmpty() )
 				{
 					cPlayer.sendMessage( core.ERROR_SELECTION );
 					return true;
@@ -85,11 +83,11 @@ public class Border implements CommandExecutor
 				
 				//---------------------------------------------------------------------------//
 				// Check Four: Set up the data for manipulation -----------------------------//
-				listSize = cPlayerSelection.getSize();
+				listSize = (int) cPlayerSelection.getSize();
 				
 				// Get the minimum and maximum array
-				maxCoord = core.playerSelections.getMaximumsFor( cPlayerName );
-				minCoord = core.playerSelections.getMinimumsFor( cPlayerName );
+				maxCoord = cPlayerSelection.getMaximums();
+				minCoord = cPlayerSelection.getMinimums();
 				
 				//---------------------------------------------------------------------------//
 				// Check Five: Verify Valid Values (Parse-able Values) ----------------------//
@@ -120,17 +118,17 @@ public class Border implements CommandExecutor
 				if( commandArgs[0].equalsIgnoreCase( "-c" ) )
 				{
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 					
 					// Execute for chunks
 					for( int listIndex = 0 ; listIndex < listSize ; listIndex++ )
 					{
 						// Set up chunk variables
-						Block chunkMinBlock = cPlayerSelection.getChunkOfBlock( listIndex ).getBlock( 0 , 1 , 0 );
-						Block chunkMaxBlock = cPlayerSelection.getChunkOfBlock( listIndex ).getBlock( 15 , 1 , 15 );
+						Block chunkMinBlock = cPlayerSelection.getChunkOfBlock( cPlayerWorld, listIndex ).getBlock( 0 , 1 , 0 );
+						Block chunkMaxBlock = cPlayerSelection.getChunkOfBlock( cPlayerWorld, listIndex ).getBlock( 15 , 1 , 15 );
 						
 						// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 						setBorder( cPlayerWorld , blocksToStore , 
@@ -153,10 +151,10 @@ public class Border implements CommandExecutor
 				{
 						
 					// Make a new group for the player
-					blocksToStore = new BlockGroup( cPlayerWorld );
+					blocksToStore = new BlockGroup();
 					
 					// Revert the selection without clearing the selection
-					cPlayerSelection.revertBlocks( false );
+					cPlayerSelection.restoreBlocks( cPlayerWorld , false );
 					
 					// Execute Change ( X = 0 ; Y = 1 ; Z = 2 )
 					setBorder( cPlayerWorld , blocksToStore , 
