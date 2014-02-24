@@ -39,6 +39,9 @@ public class FileOutput_Block implements Callable< Boolean >
 		// Initialize variables
 		int[] blockInfoArray = new int[5];
 		
+		// Reset the list iterator
+		blockContainer.resetIterator();
+		
 		// Write the description to the file
 		outputFile.write( fDesc );
 		outputFile.newLine();
@@ -50,11 +53,14 @@ public class FileOutput_Block implements Callable< Boolean >
 		// Flush the buffer
 		outputFile.flush();
 		
+		// Reset the iterator
+		blockContainer.resetIterator();
+		
 		// Loop through and add to the storage
 		for( int i = 0 ; i < numBlocks ; i++ )
 		{
 			// Get the information from the array
-			blockInfoArray = blockContainer.get( i );
+			blockInfoArray = blockContainer.getNext();
 			
 			// Write the coordinates
 			outputFile.write( String.valueOf( blockInfoArray[0] ) );
@@ -69,12 +75,9 @@ public class FileOutput_Block implements Callable< Boolean >
 			outputFile.write( ' ' );
 			outputFile.write( String.valueOf( blockInfoArray[4] ) );
 			outputFile.newLine();
-			
-			// Flush the buffer
-			outputFile.flush();
 		}
 
-		// Close the file writing object
+		// Close the file writing object (flushed by method)
 		outputFile.close();
 		
 		// Return a copy of the container

@@ -13,92 +13,131 @@ public class Selection implements CommandExecutor
 	// Create the executor's plug-in class instance for linking
 	private Bulldozer core;
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	Selection Default Constructor
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Selection( Bulldozer instance )
-	{
-		// Link the main instance with this executor
-		core = instance;
-	}
+	//////////////////////////////////////////////////////////////////////////
+	public Selection( Bulldozer instance ) { core = instance; }
 
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
-	// Purpose: 	Handles "kit" and "clear" commands
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Purpose: 	Handles "kit", "clears", "clearc" commands
+	//////////////////////////////////////////////////////////////////////////
 	@Override
-	public boolean onCommand( CommandSender client, Command cmd , String label, String[] cmdArgs )
-	{
-		//-------------------------------------------------------------------------------------//
-		//----------- Kit ---------------------------------------------------------------------//
-		if( cmd.getName().equalsIgnoreCase( "kit" ) )
+	public boolean onCommand( CommandSender client, Command cmd, 
+		String label, String[] cmdArgs )
+	{		
+		// Verify sender is a player
+		if( ! (client instanceof Player) )
 		{
-			// Check if the client is a player
-			if( client instanceof Player )
-			{
-				// Cast the client as a player
-				Player sender = (Player) client;
-				
-				// Give the player the tool if they don't have one
-				if( !( sender.getInventory().contains( core.selectionTool ) ) )
-				{	
-					// Give
-					sender.getInventory().addItem( core.selectionTool );
-					
-					// Output that the marker and paste tool was given
-					sender.sendMessage( core.TAG_POSITIVE + "Given \"Marker.\"" );
-				}
-				// Give the player the tool if they don't have one
-				if( !( sender.getInventory().contains( core.pasteTool ) ) )
-				{	
-					// Give
-					sender.getInventory().addItem( core.pasteTool );
-					
-					// Output that the marker and paste tool was given
-					sender.sendMessage( core.TAG_POSITIVE + "Given \"Paste Wand.\"" );
-				}
-				return true;
-			}
+			client.sendMessage( core.ERROR_CONSOLE );
+			return true;
 		}
-		//-------------------------------------------------------------------------------------//
-		//----------- Clear -------------------------------------------------------------------//
-		else if ( cmd.getName().equalsIgnoreCase( "clear" ) )
+		
+		/////////////////////////////////////////////////////////////////////
+		// Kit
+		if( cmd.getName().equalsIgnoreCase( "bdkit" ) )
 		{
-			// Check if the client is a player
-			if( client instanceof Player )
-			{
-				// Initialize variables
-				Player sender = (Player) client;
-				BlockGroup group = null;
+			// Cast the client as a player
+			Player sender = (Player) client;
+			
+			// Give the player the tool if they don't have one
+			if( !( sender.getInventory().contains( core.selectionTool ) ) )
+			{	
+				// Give
+				sender.getInventory().addItem( core.selectionTool );
 				
-				// Clear the selection
-				group = core.playerSelections.getGroupFor( sender.getName() );
-				if( ! group.isEmpty() )
-				{
-					// Clear the selection (needs restore)
-					core.playerSelections.removeGroupFor( sender.getName() , true ,  sender.getWorld() );
-					
-					// Notify the player
-					sender.sendMessage( core.TAG_POSITIVE + "Selection Cleared" );
-				}
-				
-				// Clear the clipboard
-				group = core.playerCopy.getGroupFor( sender.getName() );
-				if( ! group.isEmpty() )
-				{
-					// Clear the clipboard (doesn't need a restore)
-					core.playerCopy.removeGroupFor( sender.getName() , false ,  sender.getWorld() );
-					
-					// Notify the player
-					sender.sendMessage( core.TAG_POSITIVE + "Clipboard Cleared" );
-				}
-				
-				// Return
-				return true;
+				// Output that the marker and paste tool was given
+				sender.sendMessage( core.TAG_POSITIVE 
+					+ "Given: Marker Block (Black Wool)" );
 			}
+			
+			// Give the player the tool if they don't have one
+			if( !( sender.getInventory().contains( core.pasteTool ) ) )
+			{	
+				// Give
+				sender.getInventory().addItem( core.pasteTool );
+				
+				// Output that the marker and paste tool was given
+				sender.sendMessage( core.TAG_POSITIVE 
+					+ "Given: Paste Block (Blue Wool)" );
+			}
+			
+			// Give the player the tool if they don't have one
+			if( !( sender.getInventory().contains( core.measureTool ) ) )
+			{	
+				// Give
+				sender.getInventory().addItem( core.measureTool );
+				
+				// Output that the marker and paste tool was given
+				sender.sendMessage( core.TAG_POSITIVE 
+					+ "Given: Measure Block (Orange Wool)" );
+			}
+			
+			// Return
+			return true;
 		}
+		/////////////////////////////////////////////////////////////////////
+		// Clear Selection
+		else if ( cmd.getName().equalsIgnoreCase( "clears" ) )
+		{
+			// Initialize variables
+			Player sender = (Player) client;
+			BlockGroup group = core.playerSelections.getGroupFor( 
+				sender.getName() );
+			
+			// Clear the selection
+			if( ! group.isEmpty() )
+			{
+				// Clear the selection (needs restore)
+				core.playerSelections.removeGroupFor( 
+					sender.getName(), true, sender.getWorld() );
+				
+				// Notify the player
+				sender.sendMessage( core.TAG_POSITIVE 
+					+ "Selection Cleared" );
+			}
+			else
+			{
+				// Notify the player
+				sender.sendMessage( core.TAG_NEGATIVE 
+					+ "Selection already clear." );
+			}
+			
+			// Return
+			return true;
+		}
+		/////////////////////////////////////////////////////////////////////
+		// Clear Clipboard
+		else if ( cmd.getName().equalsIgnoreCase( "clearc" ) )
+		{
+			// Initialize variables
+			Player sender = (Player) client;
+			BlockGroup group = core.playerCopy.getGroupFor( 
+				sender.getName() );
+			
+			// Clear the clipboard
+			if( ! group.isEmpty() )
+			{
+				// Clear the clipboard (doesn't need a restore)
+				core.playerCopy.removeGroupFor( 
+					sender.getName(), false, sender.getWorld() );
+				
+				// Notify the player
+				sender.sendMessage( core.TAG_POSITIVE 
+					+ "Clipboard Cleared" );
+			}
+			else
+			{
+				// Notify the player
+				sender.sendMessage( core.TAG_NEGATIVE 
+					+ "Clipboard already clear." );
+			}
+			
+			// Return
+			return true;
+		}
+		
 		// Return false
 		return false;
 	}
-		
 }

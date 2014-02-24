@@ -1,6 +1,6 @@
 name: Bulldozer
 main: com.yahoo.tracebachi.Bulldozer
-version: 7_Alpha
+version: 2_Beta
 commands:
   box:
     description: Change the blocks in a box specified by the selection. 
@@ -26,18 +26,21 @@ commands:
   save:
     description: Save blocks to a file
     usage: §bIncorrect Command. For help, type /save
-  kit:
+  bdkit:
     description: Gives you the selection tool and a pasting tool.
-    usage: /kit
-  clear:
+    usage: /bdkit
+  clears:
     description: Clears your selection.
-    usage: /clear
+    usage: /clears
+  clearc:
+    description: Clears your clipboard.
+    usage: /clearc
   border:
     description: Make a border around the edges of the selection.
     usage: §bIncorrect Command. For help, type /border
   undo:
     description: Undo the last edit, all edits, or clears the undo storage
     usage: /undo [OR] /undo all [OR] /undo clear
-  wipe:
-    description: Remove the undo storage for all players.
-    usage: /wipe
+  rotate:
+    description: Rotates the blocks in the clipboard.
+    usage: §bIncorrect Command. For help, type /rotate

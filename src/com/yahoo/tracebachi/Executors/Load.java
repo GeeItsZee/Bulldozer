@@ -21,134 +21,153 @@ import com.yahoo.tracebachi.Utils.BlockGroup;
 
 public class Load implements CommandExecutor
 {
-	
 	// Create the executor's plug-in class instance for linking
+	public static final String permName = "Load";
 	private Bulldozer core;
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	Selection Default Constructor
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Load( Bulldozer instance )
-	{
-		// Link the main instance with this executor
-		core = instance;
-	}
+	//////////////////////////////////////////////////////////////////////////
+	public Load( Bulldozer instance ) { core = instance; }
 
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
 	// Purpose: 	Handles the "load" command
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	@Override
-	public boolean onCommand( CommandSender client, Command cmd , String label, String[] commandArgs )
+	public boolean onCommand( CommandSender sender, Command baseCommand, 
+		String arg2, String[] commandArgs )
 	{
 		// Method variables
-		int argLen = commandArgs.length ;
+		int argLen = commandArgs.length;
+		String playerName = null;
+		Player user = null;
+		BlockGroup clipBoard = null;
+		File fileToOpen = null; 
+		Scanner fileScan = null;
 		
-		// Check for command
-		if( cmd.getName().equalsIgnoreCase( "load" ) )
+		// Verify valid command
+		if( ! baseCommand.getName().equalsIgnoreCase( "load" ) )
 		{
-			// Check if the client is a player
-			if( client instanceof Player )
-			{
-				// Create/Set variables
-				Player cPlayer = (Player) client;
-				BlockGroup container = core.playerCopy.getGroupFor( cPlayer.getName() );
-				File fileToOpen = null; 
-				Scanner fileScan = null;
-				
-				//---------------------------------------------------------------------------//
-				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen < 0 || argLen > 2 )
-				{
-					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /load [File Name]" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /load -y [File Name]" );
-					cPlayer.sendMessage( ChatColor.YELLOW + "Use the first command to check the file and contents." );
-					cPlayer.sendMessage( ChatColor.YELLOW + "Use the second command to actually load contents." );
-					return true;	
-				}
-				
-				//---------------------------------------------------------------------------//
-				// Check Two: Verify Player Permissions (Send error if false) -------------//
-				if( !(core.verifyPerm( cPlayer , "Load" )) )
-				{
-					cPlayer.sendMessage( core.ERROR_PERM );
-					return true;
-				}
-				
-				//---------------------------------------------------------------------------//
-				//----------- Load the full file --------------------------------------------//
-				if( commandArgs[0].equalsIgnoreCase( "-y" ) )
-				{
-					// Initialize Future
-					Future< Boolean > threadResult = null;
-					
-					// Set the file to open
-					fileToOpen = new File( core.PLAN_FOLDER + commandArgs[1] + ".arch" );
-					
-					// Attempt to open the file
-					try
-					{
-						// Try to open the file
-						fileScan = new Scanner( new BufferedReader( new FileReader( fileToOpen ) ) );
-					}
-					catch( FileNotFoundException e )
-					{
-						// Output to the user that the file was not found
-						cPlayer.sendMessage( core.TAG_NEGATIVE + "File \"" + commandArgs[1] + ".arch\" was not found! (Check spelling?)" );
-						return true;
-					}
-					
-					// Run asynchronous file read
-					fileScan.nextLine();
-					threadResult = core.asyncExec.submit( new FileInput_Block( fileScan , container , fileScan.nextInt() ) );
-					
-					// Run a synchronous status informer
-					core.getServer().getScheduler().runTask( core , 
-						new FileStatus( threadResult , cPlayer , "File load of \"" + commandArgs[1] + ".arch\"" , core ) );
-					
-					// Return true (file will be closed in the thread)
-					return true;
-				}
-				//---------------------------------------------------------------------------//
-				//----------- Load the file information -------------------------------------//
-				else
-				{
-					// Initialize variables 
-					fileToOpen = new File( core.PLAN_FOLDER + commandArgs[0] + ".arch" );
-					
-					// Attempt to open the file
-					try
-					{
-						// Try to open the file
-						fileScan = new Scanner( new BufferedReader( new FileReader( fileToOpen ) ) );
-					}
-					catch( FileNotFoundException e )
-					{
-						// Output to the user that the file was not found
-						cPlayer.sendMessage( core.TAG_NEGATIVE + "File \"" + commandArgs[0] + ".arch\" was not found! (Check spelling?)" );
-						return true;
-					}
-					
-					// Read first few lines of information
-					cPlayer.sendMessage( core.TAG_POSITIVE + "File information loaded." );
-					cPlayer.sendMessage( ChatColor.AQUA + "     File Name: " + ChatColor.WHITE + commandArgs[0] );
-					cPlayer.sendMessage( ChatColor.AQUA + "     Description: " + ChatColor.WHITE + fileScan.nextLine() );
-					cPlayer.sendMessage( ChatColor.AQUA + "     Number of Blocks: " + ChatColor.WHITE + fileScan.nextLine() );
-					
-					// Close the file (very important)
-					fileScan.close();
-					
-					// Output help message
-					cPlayer.sendMessage( core.TAG_POSITIVE + "To load blocks, do /load -y [File Name]" );
-					return true;
-				}
-			}
-			else { client.sendMessage( core.ERROR_CONSOLE ); }
+			return true;
 		}
 		
-		// Return false by default
-		return false;
+		// Verify sender is a player
+		if( ! (sender instanceof Player) )
+		{
+			sender.sendMessage( core.ERROR_CONSOLE );
+			return true;
+		}
+		
+		// Verify permission
+		if( ! core.verifyPerm( sender, permName ) )
+		{
+			sender.sendMessage( core.ERROR_NO_PERM );
+			return true;
+		}
+		
+		// Verify command size is valid
+		if( argLen < 2 || argLen > 4 )
+		{
+			sender.sendMessage( ChatColor.YELLOW 
+				+ "Command must be of the form:" );
+			sender.sendMessage( ChatColor.GREEN + "     "
+				+ "/load [File Name]" );
+			sender.sendMessage( ChatColor.GREEN + "     "
+				+ "/load [File Name] -y" );
+			return true;
+		}
+		
+		// Set player variables
+		user = (Player) sender;
+		playerName = user.getName();
+		clipBoard = core.playerCopy.getGroupFor( playerName );
+				
+		/////////////////////////////////////////////////////////////////////
+		// Load - Load
+		if( commandArgs[0].equalsIgnoreCase( "-y" ) )
+		{
+			// Initialize Future
+			Future< Boolean > threadResult = null;
+			
+			// Attempt to open the file
+			try
+			{
+				// Set the file to open
+				fileToOpen = new File( core.ARCH_FOLDER + 
+					commandArgs[1] + ".arch" );
+				
+				// Try to open the file
+				fileScan = new Scanner( new BufferedReader( 
+					new FileReader( fileToOpen ) ) );
+			}
+			catch( FileNotFoundException e )
+			{
+				// Output to the user that the file was not found
+				user.sendMessage( core.TAG_NEGATIVE + "File (" 
+					+ commandArgs[1] + ".arch) was not found." );
+				return true;
+			}
+			
+			// Read Description
+			fileScan.nextLine();
+			
+			// Read Asycn
+			threadResult = core.asyncExec.submit( new FileInput_Block( 
+				fileScan, 
+				clipBoard, 
+				fileScan.nextInt() ) );
+			
+			// Check Sync
+			core.getServer().getScheduler().runTask( core, new FileStatus( 
+				threadResult, 
+				user, 
+				"File load of (" + commandArgs[1] + ".arch)", core ) );
+			
+			// Return true (file will be closed in the thread)
+			return true;
+		}
+		/////////////////////////////////////////////////////////////////////
+		// Load - Check
+		else
+		{
+			// Attempt to open the file
+			try
+			{
+				// Set the file to open
+				fileToOpen = new File( core.ARCH_FOLDER + 
+					commandArgs[1] + ".arch" );
+				
+				// Try to open the file
+				fileScan = new Scanner( new BufferedReader( 
+					new FileReader( fileToOpen ) ) );
+			}
+			catch( FileNotFoundException e )
+			{
+				// Output to the user that the file was not found
+				user.sendMessage( core.TAG_NEGATIVE + "File (" 
+					+ commandArgs[1] + ".arch) was not found." );
+				return true;
+			}
+			
+			// Read first few lines of information
+			user.sendMessage( core.TAG_POSITIVE 
+				+ "File information loaded." );
+			user.sendMessage( ChatColor.AQUA + "     "
+				+ "File Name: " + ChatColor.WHITE + commandArgs[0] );
+			user.sendMessage( ChatColor.AQUA + "     "
+				+ "Description: " + ChatColor.WHITE + fileScan.nextLine() );
+			user.sendMessage( ChatColor.AQUA + "     "
+				+ "Number of Blocks: " 
+				+ ChatColor.WHITE + fileScan.nextLine() );
+			
+			// Close the file (very important)
+			fileScan.close();
+			
+			// Output help message
+			user.sendMessage( core.TAG_POSITIVE + 
+				"To load blocks, do /load -y [File Name]" );
+			return true;
+		}
 	}
-
 }

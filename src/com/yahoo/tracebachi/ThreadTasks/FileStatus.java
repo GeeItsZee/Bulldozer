@@ -31,7 +31,7 @@ public class FileStatus implements Runnable
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	Run
 	// Purpose:	Check if the task is complete. If complete, notify the player otherwise
-	//			reschedule another task 5 ticks later
+	//			reschedule another task 10 ticks later
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public void run()
@@ -46,7 +46,7 @@ public class FileStatus implements Runnable
 		{
 			playerToInform.sendMessage( ChatColor.GREEN + taskDesc + " in progress..." );
 			core.getServer().getScheduler().runTaskLater( core , 
-				new FileStatus( callCheck , playerToInform , taskDesc , core ) , 5 );
+				new FileStatus( callCheck , playerToInform , taskDesc , core ) , 10 );
 		}
 	}
 }

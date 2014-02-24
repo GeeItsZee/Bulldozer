@@ -1,6 +1,7 @@
 package com.yahoo.tracebachi;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -37,7 +38,7 @@ public class Listener_Tool implements Listener
 			if( event.getItem().hasItemMeta() )
 			{
 				// Execute for Select
-				if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Marker" ) && 
+				if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Mark" ) && 
 						core.verifyPerm( event.getPlayer() , "Select" ) )
 				{
 					// Add it to the selection list
@@ -50,7 +51,7 @@ public class Listener_Tool implements Listener
 					event.setCancelled( true );
 				}
 				// Execute for Paste
-				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Paste Block" ) && 
+				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Paste" ) && 
 						core.verifyPerm( event.getPlayer() , "Paste" ) )
 				{
 					// Initialize variables
@@ -74,6 +75,36 @@ public class Listener_Tool implements Listener
 					{
 						// Advise the player
 						event.getPlayer().sendMessage( core.TAG_NEGATIVE + "Nothing to paste!" );
+					}
+					
+					// Cancel the event
+					event.setCancelled( true );
+				}
+				// Execute for Measure
+				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Measure" ) )
+				{
+					// Initialize variables
+					Block target = event.getClickedBlock();
+					BlockGroup tempGroup = core.playerSelections.getGroupFor( pName );
+					Location firstLoc = null;
+					
+					// Execute for selection
+					if( !tempGroup.isEmpty() )
+					{
+						// Get the first block
+						firstLoc = tempGroup.getFirstLocation( null );
+						
+						// Calculate the difference
+						event.getPlayer().sendMessage( ChatColor.GREEN + "Distance between Gold Block and Clicked Block is: " );
+						event.getPlayer().sendMessage( ChatColor.YELLOW + "[ " + ChatColor.LIGHT_PURPLE 
+							+ (target.getX() - firstLoc.getBlockX()) + ", "
+							+ (target.getY() - firstLoc.getBlockY()) + ", "
+							+ (target.getZ() - firstLoc.getBlockZ()) + ChatColor.YELLOW + " ]" );
+					}
+					else
+					{
+						// Advise the player
+						event.getPlayer().sendMessage( core.ERROR_NO_SELECTION);
 					}
 					
 					// Cancel the event

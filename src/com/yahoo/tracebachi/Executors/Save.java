@@ -20,118 +20,113 @@ import com.yahoo.tracebachi.Utils.BlockGroup;
 
 public class Save implements CommandExecutor
 {
-	
 	// Create the executor's plug-in class instance for linking
+	public static final String permName = "Save";
 	private Bulldozer core;
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	Selection Default Constructor
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Save( Bulldozer instance )
-	{
-		// Link the main instance with this executor
-		core = instance;
-	}
+	//////////////////////////////////////////////////////////////////////////
+	public Save( Bulldozer instance ) { core = instance; }
 
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
-	// Purpose: 	Handles the "load" command
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Purpose: 	Handles the "save" command
+	//////////////////////////////////////////////////////////////////////////
 	@Override
-	public boolean onCommand( CommandSender client, Command cmd , String label, String[] commandArgs )
+	public boolean onCommand( CommandSender sender, Command baseCommand, 
+		String arg2, String[] commandArgs )
 	{
 		// Method variables
-		int argLen = commandArgs.length ;
+		int argLen = commandArgs.length;
+		String playerName = null;
+		Player user = null;
+		BlockGroup clipBoard = null;
+		File fileToOpen = null; 
+		BufferedWriter fileSave = null;
 		
-		// Check for command
-		if( cmd.getName().equalsIgnoreCase( "save" ) )
+		// Verify valid command
+		if( ! baseCommand.getName().equalsIgnoreCase( "save" ) )
 		{
-			// Check if the client is a player
-			if( client instanceof Player )
-			{
-				// Create/Set variables
-				Player cPlayer = (Player) client;
-				BlockGroup cPlayerCopy = core.playerCopy.getGroupFor( cPlayer.getName() );
-				File fileToOpen = null; 
-				BufferedWriter fileSave = null;
-				
-				//---------------------------------------------------------------------------//
-				// Check One: Verify Player has a valid command -----------------------------//
-				if( argLen < 1 )
-				{
-					cPlayer.sendMessage( ChatColor.YELLOW + "The possible commands are:" );
-					cPlayer.sendMessage( ChatColor.GREEN + "    /save [File Name] [Description]" );
-					cPlayer.sendMessage( ChatColor.YELLOW + "Make sure you have a selection before running the command." );
-					return true;	
-				}
-				
-				//---------------------------------------------------------------------------//
-				// Check Two: Verify Player has a selection ---------------------------------//
-				if( cPlayerCopy.isEmpty() )
-				{
-					cPlayer.sendMessage( core.ERROR_SELECTION );
-					return true;
-				}
-				
-				//---------------------------------------------------------------------------//
-				// Check Three: Verify Player Permissions (Send error if false) -------------//
-				if( !(core.verifyPerm( cPlayer , "Save" )) )
-				{
-					cPlayer.sendMessage( core.ERROR_PERM );
-					return true;
-				}
-				
-				//---------------------------------------------------------------------------//
-				//----------- Save to the file ----------------------------------------------//
-				// Initialize variables
-				Future< Boolean > threadResult = null;
-				
-				// Set the file to open
-				fileToOpen = new File( core.PLAN_FOLDER + commandArgs[0] + ".arch" );
-				
-				// Try to make the output file
-				try
-				{
-					// Check if the file is created
-					if( ! fileToOpen.createNewFile() )
-					{
-						// Output to the user that the file already exists
-						cPlayer.sendMessage( core.TAG_NEGATIVE + "File \"" + commandArgs[0] + ".arch\" already exists! (Try a different name?)" );
-						return true;
-					}
-					
-					// Create the buffered stream
-					fileSave = new BufferedWriter( new FileWriter( fileToOpen ) );
-				}
-				catch( IOException e )
-				{
-					e.printStackTrace();
-				}
-				
-				// Check if there is a description
-				if( argLen == 2 )
-				{					
-					// Run asynchronous file save
-					threadResult = core.asyncExec.submit( new FileOutput_Block( fileSave , commandArgs[1] , cPlayerCopy ) );
-				}
-				else
-				{
-					// Run asynchronous file save
-					threadResult = core.asyncExec.submit( new FileOutput_Block( fileSave , "Default Description" , cPlayerCopy ) );
-				}
-				
-				// Run a synchronous status informer
-				core.getServer().getScheduler().runTask( core , 
-					new FileStatus( threadResult , cPlayer , "File save of \"" + commandArgs[0] + ".arch\"" , core ) );
-				
-				// Return true (file will be closed in the thread)
-				return true;
-			}
-			else { client.sendMessage( core.ERROR_CONSOLE ); }
+			return true;
 		}
 		
-		// Return false by default
-		return false;
+		// Verify sender is a player
+		if( ! (sender instanceof Player) )
+		{
+			sender.sendMessage( core.ERROR_CONSOLE );
+			return true;
+		}
+		
+		// Verify permission
+		if( ! core.verifyPerm( sender, permName ) )
+		{
+			sender.sendMessage( core.ERROR_NO_PERM );
+			return true;
+		}
+		
+		// Verify command size is valid
+		if( argLen < 2 || argLen > 4 )
+		{
+			sender.sendMessage( ChatColor.YELLOW 
+				+ "Command must be of the form:" );
+			sender.sendMessage( ChatColor.GREEN + "     "
+				+ "/save [File Name] [Description]" );
+			return true;
+		}
+		
+		// Set player variables
+		user = (Player) sender;
+		playerName = user.getName();
+		clipBoard = core.playerCopy.getGroupFor( playerName );
+		
+		// Verify clipboard is not empty
+		if( clipBoard.isEmpty() )
+		{
+			user.sendMessage( core.ERROR_NO_CLIPBOARD );
+			return true;
+		}
+				
+		/////////////////////////////////////////////////////////////////////
+		// Save
+		
+		// Initialize variables
+		Future< Boolean > threadResult = null;
+		
+		// Try to make the output file
+		try
+		{
+			// Set the file to open
+			fileToOpen = new File( core.ARCH_FOLDER 
+				+ commandArgs[0] + ".arch" );
+			
+			// Check if the file is created
+			if( ! fileToOpen.createNewFile() )
+			{
+				// Output to the user that the file already exists
+				user.sendMessage( core.TAG_NEGATIVE + "File (" 
+					+ commandArgs[0] + ".arch) already exists!" );
+				return true;
+			}
+			
+			// Create the buffered stream
+			fileSave = new BufferedWriter( new FileWriter( fileToOpen ) );
+		}
+		catch( IOException e ) { e.printStackTrace(); }
+		
+		// Run asynchronous file save
+		threadResult = core.asyncExec.submit( new FileOutput_Block( 
+			fileSave,
+			commandArgs[1],
+			clipBoard ) );
+		
+		// Run a synchronous status informer
+		core.getServer().getScheduler().runTask( core, new FileStatus(
+			threadResult, 
+			user,
+			"File save of (" + commandArgs[0] + ".arch)", core ) );
+		
+		// Return true (file will be closed in the thread)
+		return true;
 	}
-
 }

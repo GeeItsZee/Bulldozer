@@ -2,8 +2,10 @@ package com.yahoo.tracebachi.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 
 import org.bukkit.Chunk;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
@@ -16,9 +18,12 @@ import org.bukkit.block.Block;
 @SuppressWarnings("deprecation")
 public class BlockGroup
 {
-			
+	// Static constants
+	public static final double ANGLE_TO_RADS = (Math.PI * 2) / 360.0;
+	
 	// Class Variables
 	private List< BlockInfo > blockInfoList = null;
+	private ListIterator< BlockInfo > iterForNext = null;
 	
 	// Key Block: The block from which the offsets for pasting is determined
 	private int keyX , keyY , keyZ;
@@ -133,64 +138,38 @@ public class BlockGroup
 		return playerWorld.getBlockAt( keyX , keyY , keyZ );
 	}
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method:	updateSelection
-	// Purpose:	Loop through the selection and check if the block was changed and update the 
-	//			stored block data accordingly
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public void updateSelection()
+	/**
+	 * Using the key block data stored in the class, this function iterates
+	 * through the block information list and recalculates the coordinates
+	 * off a key block of (0,0,0). <p>
+	 */
+	public void recalculateCoordinates()
 	{
-		/*// Initialize variables
-		int size = blockInfoList.size();
-		Block cursorBlock = null;
+		// Method variables
 		BlockInfo node = null;
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
-		// Update the data in the selected blocks
-		for( int i = 0 ; i < size ; i++ )
+		// Loop through the blockInfoList
+		while( iter.hasNext() )
 		{
-			// Get the info
-			node = blockInfoList.get( i );
+			// Get the block info using iterator
+			node = iter.next();
 			
-			// Update the data of the block
-			cursorBlock = groupWorld.getBlockAt( node.xPos , node.yPos , node.zPos );
-			
-			// Update the listing
-			node.blockID = cursorBlock.getTypeId();
-			node.blockSubID = cursorBlock.getData();
+			// Update coordinates
+			node.xPos = node.xPos - keyX;
+			node.yPos = node.yPos - keyY;
+			node.zPos = node.zPos - keyZ;
 		}
 		
-		// Set the first to gold
-		if( size != 0 )
-		{
-			// Get the info
-			node = blockInfoList.get( 0 );
-			
-			// Update the data of the block
-			cursorBlock = groupWorld.getBlockAt( node.xPos , node.yPos , node.zPos );
-			
-			// Set to gold
-			cursorBlock.setTypeId( 41 );
-		}
-		
-		// Set the rest to glass
-		for( int i = 1 ; i < size ; i++ )
-		{
-			// Get the info
-			node = blockInfoList.get( i );
-			
-			// Update the data of the block
-			cursorBlock = groupWorld.getBlockAt( node.xPos , node.yPos , node.zPos );
-			
-			// Set to gold
-			cursorBlock.setTypeId( 20 );
-		}*/
+		// Set the key values
+		keyX = keyY = keyZ = 0;
 	}
 	
 	/**
-	 * Using the list stored in the class, this method restores all blocks into
-	 * their original positions in the world that was passed to the function.
-	 * If the clearList boolean is true, the list will be wiped on exit from
-	 * this function. <p>
+	 * Using a list iterator through the list stored in the class, this method 
+	 * restores all blocks into their original positions in the world that 
+	 * was passed as the argument. If the clearList boolean is true, the list 
+	 * will be wiped on exit from this function. <p>
 	 * 
 	 * @param playerWorld	: World to place blocks in
 	 * @param clearList		: Boolean instructing on whether or not to clear the 
@@ -199,15 +178,15 @@ public class BlockGroup
 	public void restoreBlocks( World playerWorld , boolean clearList )
 	{
 		// Method variables
-		int size = blockInfoList.size();
 		BlockInfo node = null;
 		Block cursorBlock = null;
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
 		// Loop through the blockInfoList
-		for( int iter = 0 ; iter < size ; iter++ )
+		while( iter.hasNext() )
 		{
-			// Get the block
-			node = blockInfoList.get( iter );
+			// Get the block info using iterator
+			node = iter.next();
 			cursorBlock = playerWorld.getBlockAt( node.xPos , node.yPos , node.zPos );
 			
 			// Revert the block
@@ -215,17 +194,17 @@ public class BlockGroup
 			cursorBlock.setData( node.blockSubID );
 		}
 		
-		// Check the 'clearList' boolean
+		// Check the 'clearList' boolean and clear if needed
 		if( clearList ) { clearBlockInfo(); }
 	}
 	
 	/**
 	 * Recreates the blocks from the stored list by subtracting the key values
 	 * of the class from the passed values in order to establish an offset
-	 * for each of the coordinates. Using this offset value, a loop through
-	 * the list stores the current state of each of the blocks at the same
-	 * coordinates in a temporary BlockGroup object. Once the list loop
-	 * has completed, the temporary BlockGroup is returned. <p>
+	 * for each of the coordinates. An iterator through the list gets the block
+	 * being modified and stores the block info before the recreation into a 
+	 * temporary BlockGroup. Once the list loop has completed, the temporary 
+	 * BlockGroup is returned. <p>
 	 * 
 	 * @param playerWorld	: World to place the blocks in
 	 * @param x			: Starting X-Coordinate
@@ -238,11 +217,11 @@ public class BlockGroup
 	public BlockGroup recreateAt( World playerWorld, int x , int y , int z )
 	{
 		// Method variables
-		int blockInfoListSize = blockInfoList.size();
 		int offX , offY , offZ;
 		BlockGroup toReturn = new BlockGroup();
 		BlockInfo node = null;
 		Block cursorBlock = null;
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
 		// Verify the list is not empty
 		if( ! blockInfoList.isEmpty() )
@@ -253,10 +232,10 @@ public class BlockGroup
 			offZ = z - keyZ;
 			
 			// Loop through the blockInfoList
-			for( int iter = 0 ; iter < blockInfoListSize ; iter++ )
+			while( iter.hasNext() )
 			{
-				// Get the block
-				node = blockInfoList.get( iter );
+				// Get the block info using iterator
+				node = iter.next();
 				cursorBlock = playerWorld.getBlockAt( node.xPos + offX , node.yPos + offY , node.zPos + offZ );
 				
 				// Add to the group
@@ -268,8 +247,46 @@ public class BlockGroup
 			}
 		}
 		
-		// Clear the blockInfoList and return
+		// Return
 		return toReturn;
+	}
+	
+	/**
+	 * While iterating through the block information list, this function
+	 * recalculates the new coordinates of the block after "rotating"
+	 * the point relative to the key block. <p>
+	 * 
+	 * @param iterations	: Number of 90 degree rotations to perform.
+	 */
+	public void rotateRelativeToY( int iterations )
+	{
+		// Method variables
+		double angleInRad = ((iterations * 90) % 360) * ANGLE_TO_RADS;
+		double cosOfAngle = Math.round( Math.cos( angleInRad ) );
+		double sinOfAngle = Math.round( Math.sin( angleInRad ) );
+		int tempX = 0;
+		BlockInfo node = null;
+		
+		// Recalculate the coordinates according to key block
+		recalculateCoordinates();
+		
+		// Reset the iterator
+		// Note: Order of recalculate and then initialization prevents 
+		// ConcurrentModificationException caused by modification of list
+		// through an "older" iterator
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
+		
+		// Loop through the list
+		while( iter.hasNext() )
+		{
+			// Get the block info
+			node = iter.next();
+			tempX = node.xPos;
+			
+			// Adjust the coordinates for a fixed y-coordinate			
+			node.xPos = (int) Math.round( (( tempX * cosOfAngle ) - ( node.zPos * sinOfAngle )) );
+			node.zPos = (int) Math.round( (( tempX * sinOfAngle ) + ( node.zPos * cosOfAngle )) );
+		}
 	}
 	
 	/**
@@ -279,9 +296,6 @@ public class BlockGroup
 	 */
 	public long getSize()
 	{	
-		// Method variables
-		int sizeVal = 0;
-		
 		// If the list is not empty
 		if( blockInfoList != null )
 		{
@@ -290,7 +304,7 @@ public class BlockGroup
 		}
 	
 		// Return 0 otherwise
-		return sizeVal;
+		return 0;
 	}
 	
 	/**
@@ -302,20 +316,20 @@ public class BlockGroup
 	public BlockGroup getCopy()
 	{	
 		// Method variables
-		int size = blockInfoList.size();
 		BlockInfo node = null;
 		BlockGroup toReturn = new BlockGroup();
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
 		// Copy the key block
 		toReturn.keyX = keyX;
 		toReturn.keyY = keyY;
 		toReturn.keyZ = keyZ;
 		
-		// Loop through the list and copy
-		for( int i = 0 ; i < size ; i++ )
+		// Loop through the list using iterator
+		while( iter.hasNext() )
 		{
 			// Get the node
-			node = blockInfoList.get( i );
+			node = iter.next();
 			
 			// Push a copy of the data into the group
 			toReturn.addBlock( node.xPos , node.yPos , node.zPos , node.blockID , node.blockSubID );
@@ -326,9 +340,11 @@ public class BlockGroup
 	}
 	
 	/**
-	 * Fetches the BlockInfo at the {@code index} position in the list. This
+	 * Fetches the next BlockInfo in the list if there is more to fetch. This
 	 * information is stored in an integer array of size five and returned
 	 * to the caller. <p>
+	 * Note: The user must take care to reset the iterator to the beginning
+	 * using the {@link BlockGroup#resetIterator() resetIterator} function. <p>
 	 * 
 	 * @param index	: Position of the BlockInfo from which the results
 	 * are desired. If index is out of bounds, the list will throw an exception.
@@ -342,17 +358,17 @@ public class BlockGroup
 	 * <li>At [4], Sub-Type </li>
 	 * </ul>
 	 */
-	public int[] get( int index )
+	public int[] getNext()
 	{	
 		// Method variables
 		int[] toReturn = new int[5];
 		BlockInfo node = null;
 		
 		// If the list is not empty
-		if( index < blockInfoList.size() )
+		if( iterForNext.hasNext() )
 		{
 			// Get the first block in the list
-			node = blockInfoList.get( index );
+			node = iterForNext.next();
 			
 			// Copy the data
 			toReturn[0] = node.xPos - keyX;
@@ -370,98 +386,137 @@ public class BlockGroup
 		return toReturn;
 	}
 	
+	public Location getFirstLocation( World targetWorld )
+	{
+		// Method variables
+		BlockInfo node = null;
+		
+		if( blockInfoList.size() != 0 )
+		{
+			node = blockInfoList.get( 0 );
+			
+			return new Location( targetWorld,
+				node.xPos,
+				node.yPos,
+				node.zPos );
+		}
+		
+		return null;
+	}
+	
 	/**
-	 * Loops through the list and searches for the highest values for the
-	 * x, y, and z coordinates. The results are returned stored in an integer
-	 * array of size three. <p>
-	 * 
-	 * @return An array (all default to 0) containing:
-	 * <ul> 
-	 * <li>At [0], X-Coordinate </li>
-	 * <li>At [1], Y-Coordinate </li>
-	 * <li>At [2], Z-Coordinate </li>
-	 * </ul>
+	 * Resets the internal iterator to the beginning of the BlockInfo list.
 	 */
-	public int[] getMaximums()
+	public void resetIterator()
+	{
+		// Check if the list exists
+		if( blockInfoList != null )
+		{
+			// Reset the iterator to the beginning
+			iterForNext = blockInfoList.listIterator();
+		}
+	}
+	
+	/**
+	 * Iterates through the list and searches for the highest values for the
+	 * x, y, and z coordinates.
+	 * 
+	 * @return {@link Location} object or null for empty list.
+	 */
+	public Location getMaxLocation( World targetWorld )
 	{
 		// Initialize variables
-		int listSize = blockInfoList.size(), compareVal;
-		int[] toReturn = new int[3];
+		int compareVal;
+		int[] values = new int[3];
+		BlockInfo node = null;
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
 		// Check if the list empty
 		if( !isEmpty() )
 		{
 			// Set the initial values
-			toReturn[0] = blockInfoList.get(0).xPos;
-			toReturn[1] = blockInfoList.get(0).yPos;
-			toReturn[2] = blockInfoList.get(0).zPos;
+			node = iter.next();
+			values[0] = node.xPos;
+			values[1] = node.yPos;
+			values[2] = node.zPos;
 			
 			// Loop through the list
-			for( int i = 1 ; i < listSize ; i++ )
+			while( iter.hasNext() )
 			{
+				// Get the next block info
+				node = iter.next();
+				
 				// Compare X
-				compareVal = blockInfoList.get( i ).xPos;
-				if( compareVal > toReturn[0] ) { toReturn[0] = compareVal; }
+				compareVal = node.xPos;
+				if( compareVal > values[0] ) { values[0] = compareVal; }
 				
 				// Compare Y
-				compareVal = blockInfoList.get( i ).yPos;
-				if( compareVal > toReturn[1] ) { toReturn[1] = compareVal; }
+				compareVal = node.yPos;
+				if( compareVal > values[1] ) { values[1] = compareVal; }
 				
 				// Compare Z
-				compareVal = blockInfoList.get( i ).zPos;
-				if( compareVal > toReturn[2] ) { toReturn[2] = compareVal; }
+				compareVal = node.zPos;
+				if( compareVal > values[2] ) { values[2] = compareVal; }
 			}
+			
+			// Return constructed location
+			return new Location( targetWorld, 
+				values[0], values[1], values[2] );
 		}
 		
-		// Return the array
-		return toReturn;
+		// Return unfound
+		return null;
 	}
 
 	/**
-	 * Loops through the list and searches for the lowest values for the
-	 * x, y, and z coordinates. The results are returned stored in an integer
-	 * array of size three. <p>
+	 * Iterates through the list and searches for the lowest values for the
+	 * x, y, and z coordinates.
 	 * 
-	 * @return An array (all default to 0) containing:
-	 * <ul> 
-	 * <li>At [0], X-Coordinate </li>
-	 * <li>At [1], Y-Coordinate </li>
-	 * <li>At [2], Z-Coordinate </li>
-	 * </ul>
+	 * @return {@link Location} object or null for empty list.
 	 */
-	public int[] getMinimums()
+	public Location getMinLocation( World targetWorld )
 	{
 		// Initialize variables
-		int listSize = blockInfoList.size(), compareVal;
-		int[] toReturn = new int[3];
+		int compareVal;
+		int[] values = new int[3];
+		BlockInfo node = null;
+		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
 		// Check if the list empty
 		if( !isEmpty() )
 		{
 			// Set the initial values
-			toReturn[0] = blockInfoList.get(0).xPos;
-			toReturn[1] = blockInfoList.get(0).yPos;
-			toReturn[2] = blockInfoList.get(0).zPos;
+			node = iter.next();
+			values[0] = node.xPos;
+			values[1] = node.yPos;
+			values[2] = node.zPos;
 			
 			// Loop through the list
-			for( int i = 1 ; i < listSize ; i++ )
+			while( iter.hasNext() )
 			{
+				// Get the next block info
+				node = iter.next();
+				
 				// Compare X
-				compareVal = blockInfoList.get( i ).xPos;
-				if( compareVal < toReturn[0] ) { toReturn[0] = compareVal; }
+				compareVal = node.xPos;
+				if( compareVal < values[0] ) { values[0] = compareVal; }
 				
 				// Compare Y
-				compareVal = blockInfoList.get( i ).yPos;
-				if( compareVal < toReturn[1] ) { toReturn[1] = compareVal; }
+				compareVal = node.yPos;
+				if( compareVal < values[1] ) { values[1] = compareVal; }
 				
 				// Compare Z
-				compareVal = blockInfoList.get( i ).zPos;
-				if( compareVal < toReturn[2] ) { toReturn[2] = compareVal; }
+				compareVal = node.zPos;
+				if( compareVal < values[2] ) { values[2] = compareVal; }
 			}
+			
+			// Return constructed location
+			return new Location( targetWorld, 
+				values[0], values[1], values[2] );
 		}
 		
-		// Return the array
-		return toReturn;
+		// Return unfound
+		return null;
 	}
 
 	/**
