@@ -189,9 +189,14 @@ public class Replace implements CommandExecutor
 				+ "Point Box Complete." );
 			return true;
 		}
-				
-		// Return false by default
-		return false;
+		/////////////////////////////////////////////////////////////////////
+		// Default
+		else
+		{
+			// Tell the player flag was invalid
+			user.sendMessage( core.ERROR_BAD_FLAG );
+			return true;
+		}
 	}
 	
 	

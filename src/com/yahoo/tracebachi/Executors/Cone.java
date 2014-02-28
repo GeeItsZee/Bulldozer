@@ -99,10 +99,10 @@ public class Cone implements CommandExecutor
 			case 4:
 				height = InputParseUtil.parseSafeInt( 
 					commandArgs[3], 5 - firstLoc.getBlockY(), 
-					254 - firstLoc.getBlockY(), 0 );
+					254 - firstLoc.getBlockY(), 1 );
 			case 3:
 				radius = InputParseUtil.parseSafeInt( 
-					commandArgs[2], 0, 2000, 0 );
+					commandArgs[2], 1, 2000, 1 );
 			case 2:
 				blockType = InputParseUtil.parseSafeIntPair(
 					commandArgs[1], ":", 
@@ -154,16 +154,22 @@ public class Cone implements CommandExecutor
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName , blockChanges );
+			core.playerUndo.pushGroupFor( playerName, blockChanges );
+			System.out.print( blockChanges.getSize() );
 			blockChanges = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + "Cone [Hollow] Complete." );
 			return true;
 		}
-		
-		// Return false by default
-		return false;
+		/////////////////////////////////////////////////////////////////////
+		// Default
+		else
+		{
+			// Tell the player flag was invalid
+			user.sendMessage( core.ERROR_BAD_FLAG );
+			return true;
+		}
 	}
 	
 	
@@ -176,6 +182,7 @@ public class Cone implements CommandExecutor
 		int height, int radius, int blockType, byte bData )
 	{
 		// Method variables
+		System.out.print( height );
 		double stepX, stepZ, stepY = (1.0 / height);
 		int coneTip = startY + height;
 		
@@ -203,12 +210,17 @@ public class Cone implements CommandExecutor
 					cursorBlock = curWorld.getBlockAt( 
 						offX , coneTip - (int) i, offZ );
 					
-					// Record the data
-					blockStorage.addBlock( cursorBlock );
-					
-					// Change the data
-					cursorBlock.setTypeId( blockType );
-					cursorBlock.setData( bData );
+					// Check if already set
+					// TODO: Replace BlockGroup with something more efficient
+					if( cursorBlock.getTypeId() != blockType )
+					{
+						// Record the data
+						blockStorage.addBlock( cursorBlock );
+						
+						// Change the data
+						cursorBlock.setTypeId( blockType );
+						cursorBlock.setData( bData );
+					}
 				}
 			}
 		}
@@ -232,12 +244,16 @@ public class Cone implements CommandExecutor
 					cursorBlock = curWorld.getBlockAt( 
 						offX , coneTip - (int) i, offZ );
 					
-					// Record the data
-					blockStorage.addBlock( cursorBlock );
-					
-					// Change the data
-					cursorBlock.setTypeId( blockType );
-					cursorBlock.setData( bData );
+					// Check if already set
+					if( cursorBlock.getTypeId() != blockType )
+					{
+						// Record the data
+						blockStorage.addBlock( cursorBlock );
+						
+						// Change the data
+						cursorBlock.setTypeId( blockType );
+						cursorBlock.setData( bData );
+					}
 				}
 			}
 		}
@@ -284,12 +300,16 @@ public class Cone implements CommandExecutor
 						cursorBlock = curWorld.getBlockAt( 
 							offX, blockY, offZ );
 						
-						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
-						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
+						// Check if already set
+						if( cursorBlock.getTypeId() != blockType )
+						{
+							// Record the data
+							blockStorage.addBlock( cursorBlock );
+							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
+						}
 					}
 				}
 			}
@@ -318,12 +338,16 @@ public class Cone implements CommandExecutor
 						cursorBlock = curWorld.getBlockAt( 
 							offX, blockY, offZ );
 						
-						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
-						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
+						// Check if already set
+						if( cursorBlock.getTypeId() != blockType )
+						{
+							// Record the data
+							blockStorage.addBlock( cursorBlock );
+							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
+						}
 					}
 				}
 			}

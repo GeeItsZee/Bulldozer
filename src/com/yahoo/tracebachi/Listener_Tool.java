@@ -95,8 +95,8 @@ public class Listener_Tool implements Listener
 						firstLoc = tempGroup.getFirstLocation( null );
 						
 						// Calculate the difference
-						event.getPlayer().sendMessage( ChatColor.GREEN + "Distance between Gold Block and Clicked Block is: " );
-						event.getPlayer().sendMessage( ChatColor.YELLOW + "[ " + ChatColor.LIGHT_PURPLE 
+						event.getPlayer().sendMessage( ChatColor.GREEN + "Distance between Gold Block and Clicked Block is: "
+							+ ChatColor.YELLOW + "[ " + ChatColor.LIGHT_PURPLE 
 							+ (target.getX() - firstLoc.getBlockX()) + ", "
 							+ (target.getY() - firstLoc.getBlockY()) + ", "
 							+ (target.getZ() - firstLoc.getBlockZ()) + ChatColor.YELLOW + " ]" );

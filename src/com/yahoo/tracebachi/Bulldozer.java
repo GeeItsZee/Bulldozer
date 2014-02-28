@@ -53,8 +53,8 @@ public class Bulldozer extends JavaPlugin
 		ChatColor.YELLOW + "[BullDozer] " + ChatColor.RED;
 	public final String ERROR_NO_PERM = 
 		ChatColor.RED + "You do not have the permission to do that.";
-	public final String ERROR_BAD_INT = 
-		ChatColor.RED + "Invalid integer value!";
+	public final String ERROR_BAD_FLAG = 
+		ChatColor.RED + "Invalid flag for this command.";
 	public final String ERROR_NO_SELECTION = 
 		ChatColor.RED + "Block not selected!";
 	public final String ERROR_NO_CLIPBOARD = 

@@ -176,9 +176,14 @@ public class Border implements CommandExecutor
 			user.sendMessage( core.TAG_POSITIVE + "Border [Point] Complete." );
 			return true;
 		}
-				
-		// Return false by default
-		return false;
+		/////////////////////////////////////////////////////////////////////
+		// Default
+		else
+		{
+			// Tell the player flag was invalid
+			user.sendMessage( core.ERROR_BAD_FLAG );
+			return true;
+		}
 	}
 	
 	//////////////////////////////////////////////////////////////////////////

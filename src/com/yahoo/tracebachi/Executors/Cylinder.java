@@ -103,10 +103,10 @@ public class Cylinder implements CommandExecutor
 					commandArgs[4], 0, firstLoc.getBlockY() - 5, 0);
 			case 4:
 				height = InputParseUtil.parseSafeInt( 
-					commandArgs[3], 0, 254 - firstLoc.getBlockY(), 0 );
+					commandArgs[3], 1, 254 - firstLoc.getBlockY(), 1 );
 			case 3:
 				radius = InputParseUtil.parseSafeInt( 
-					commandArgs[2], 0, 2000, 0 );
+					commandArgs[2], 1, 2000, 1 );
 			case 2:
 				blockType = InputParseUtil.parseSafeIntPair(
 					commandArgs[1], ":", 
@@ -169,9 +169,14 @@ public class Cylinder implements CommandExecutor
 				"Cylinder [Hollow] Complete." );
 			return true;
 		}
-		
-		// Return false by default
-		return false;
+		/////////////////////////////////////////////////////////////////////
+		// Default
+		else
+		{
+			// Tell the player flag was invalid
+			user.sendMessage( core.ERROR_BAD_FLAG );
+			return true;
+		}
 	}
 	
 	

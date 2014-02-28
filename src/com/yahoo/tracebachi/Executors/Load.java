@@ -72,9 +72,9 @@ public class Load implements CommandExecutor
 			sender.sendMessage( ChatColor.YELLOW 
 				+ "Command must be of the form:" );
 			sender.sendMessage( ChatColor.GREEN + "     "
-				+ "/load [File Name]" );
-			sender.sendMessage( ChatColor.GREEN + "     "
 				+ "/load [File Name] -y" );
+			sender.sendMessage( ChatColor.GREEN + "     "
+				+ "/load [File Name] -n" );
 			return true;
 		}
 		
@@ -85,7 +85,7 @@ public class Load implements CommandExecutor
 				
 		/////////////////////////////////////////////////////////////////////
 		// Load - Load
-		if( commandArgs[0].equalsIgnoreCase( "-y" ) )
+		if( commandArgs[1].equalsIgnoreCase( "-y" ) )
 		{
 			// Initialize Future
 			Future< Boolean > threadResult = null;
@@ -95,7 +95,7 @@ public class Load implements CommandExecutor
 			{
 				// Set the file to open
 				fileToOpen = new File( core.ARCH_FOLDER + 
-					commandArgs[1] + ".arch" );
+					commandArgs[0] + ".arch" );
 				
 				// Try to open the file
 				fileScan = new Scanner( new BufferedReader( 
@@ -105,7 +105,7 @@ public class Load implements CommandExecutor
 			{
 				// Output to the user that the file was not found
 				user.sendMessage( core.TAG_NEGATIVE + "File (" 
-					+ commandArgs[1] + ".arch) was not found." );
+					+ commandArgs[0] + ".arch) was not found." );
 				return true;
 			}
 			
@@ -122,21 +122,22 @@ public class Load implements CommandExecutor
 			core.getServer().getScheduler().runTask( core, new FileStatus( 
 				threadResult, 
 				user, 
-				"File load of (" + commandArgs[1] + ".arch)", core ) );
+				"File load of (" + commandArgs[0] + ".arch)", core ) );
 			
 			// Return true (file will be closed in the thread)
 			return true;
 		}
 		/////////////////////////////////////////////////////////////////////
 		// Load - Check
-		else
+		else if( commandArgs[1].equalsIgnoreCase( "-n" ) )
 		{
+			
 			// Attempt to open the file
 			try
 			{
 				// Set the file to open
 				fileToOpen = new File( core.ARCH_FOLDER + 
-					commandArgs[1] + ".arch" );
+					commandArgs[0] + ".arch" );
 				
 				// Try to open the file
 				fileScan = new Scanner( new BufferedReader( 
@@ -146,7 +147,7 @@ public class Load implements CommandExecutor
 			{
 				// Output to the user that the file was not found
 				user.sendMessage( core.TAG_NEGATIVE + "File (" 
-					+ commandArgs[1] + ".arch) was not found." );
+					+ commandArgs[0] + ".arch) was not found." );
 				return true;
 			}
 			
@@ -166,7 +167,17 @@ public class Load implements CommandExecutor
 			
 			// Output help message
 			user.sendMessage( core.TAG_POSITIVE + 
-				"To load blocks, do /load -y [File Name]" );
+				"To load blocks, do /load [File Name] -y" );
+			
+			// Return
+			return true;
+		}
+		/////////////////////////////////////////////////////////////////////
+		// Default
+		else
+		{
+			// Tell the player flag was invalid
+			user.sendMessage( core.ERROR_BAD_FLAG );
 			return true;
 		}
 	}
