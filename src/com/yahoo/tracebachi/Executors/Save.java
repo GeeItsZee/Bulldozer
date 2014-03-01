@@ -15,7 +15,7 @@ import org.bukkit.entity.Player;
 import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.ThreadTasks.FileOutput_Block;
 import com.yahoo.tracebachi.ThreadTasks.FileStatus;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 
 
 public class Save implements CommandExecutor
@@ -41,7 +41,7 @@ public class Save implements CommandExecutor
 		int argLen = commandArgs.length;
 		String playerName = null;
 		Player user = null;
-		BlockGroup clipBoard = null;
+		BlockSet clipBoard = null;
 		File fileToOpen = null; 
 		BufferedWriter fileSave = null;
 		
@@ -81,7 +81,7 @@ public class Save implements CommandExecutor
 		clipBoard = core.playerCopy.getGroupFor( playerName );
 		
 		// Verify clipboard is not empty
-		if( clipBoard.isEmpty() )
+		if( clipBoard.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_CLIPBOARD );
 			return true;

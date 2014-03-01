@@ -41,7 +41,7 @@ public class Bulldozer extends JavaPlugin
 	public ItemMeta measureToolMeta = measureTool.getItemMeta();
 	
 	// Initialize the utilities
-	public SingleBlockGroupManager playerSelections = null;
+	public SingleBlockGroupManager playerSelection = null;
 	public SingleBlockGroupManager playerCopy = null;
 	public MultiBlockGroupManager playerUndo = null;
 	public ExecutorService asyncExec = null;
@@ -56,11 +56,11 @@ public class Bulldozer extends JavaPlugin
 	public final String ERROR_BAD_FLAG = 
 		ChatColor.RED + "Invalid flag for this command.";
 	public final String ERROR_NO_SELECTION = 
-		ChatColor.RED + "Block not selected!";
+		ChatColor.RED + "Selection is empty!";
 	public final String ERROR_NO_CLIPBOARD = 
-		ChatColor.RED + "Selection not in the clipboard!";
+		ChatColor.RED + "Clip Board is empty!";
 	public final String ERROR_NO_UNDO = 
-		ChatColor.RED + "There is nothing to undo!";
+		ChatColor.RED + "Nothing to undo!";
 	public final String ERROR_CONSOLE = 
 		"Command cannot be run in the console.";
 	public final String ARCH_FOLDER = 
@@ -89,7 +89,7 @@ public class Bulldozer extends JavaPlugin
 	public void onEnable()
 	{
 		// Utility Setup
-		playerSelections = new SingleBlockGroupManager();
+		playerSelection = new SingleBlockGroupManager();
 		playerCopy = new SingleBlockGroupManager();
 		playerUndo = new MultiBlockGroupManager();
 		asyncExec = Executors.newFixedThreadPool( 5 );
@@ -145,8 +145,8 @@ public class Bulldozer extends JavaPlugin
 		asyncExec.shutdownNow();
 		
 		// Disable the selection manager
-		playerSelections.closeManager();
-		playerSelections = null;
+		playerSelection.closeManager();
+		playerSelection = null;
 		
 		// Clear the block storage
 		playerUndo.closeManager();

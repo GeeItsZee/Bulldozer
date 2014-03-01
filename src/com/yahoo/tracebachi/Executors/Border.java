@@ -1,6 +1,7 @@
 package com.yahoo.tracebachi.Executors;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -10,7 +11,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 @SuppressWarnings("deprecation")
@@ -35,7 +36,6 @@ public class Border implements CommandExecutor
 	{
 		// Method variables
 		int argLen = commandArgs.length;
-		int listSize = 0;
 		int lowOffset = 0;
 		int highOffset = 0;
 		int[] blockType = null;
@@ -44,8 +44,8 @@ public class Border implements CommandExecutor
 		Location maxLoc = null;
 		Location minLoc = null ;
 		World playerWorld = null;
-		BlockGroup playerSelect = null;
-		BlockGroup blockChanges = null;
+		BlockSet playerSelect = null;
+		BlockSet changes = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "border" ) )
@@ -83,13 +83,12 @@ public class Border implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelections.getGroupFor( playerName );
-		listSize = (int) playerSelect.getSize();
+		playerSelect = core.playerSelection.getGroupFor( playerName );
 		maxLoc = playerSelect.getMaxLocation( playerWorld );
 		minLoc = playerSelect.getMinLocation( playerWorld );
 		
 		// Verify player has a selection
-		if( listSize == 0 )
+		if( playerSelect.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_SELECTION );
 			return true;
@@ -99,11 +98,17 @@ public class Border implements CommandExecutor
 		switch( argLen )
 		{
 			case 4:
-				highOffset = InputParseUtil.parseSafeInt( 
-					commandArgs[3], 0, 254 - minLoc.getBlockY(), 0 );
-			case 3:
 				lowOffset = InputParseUtil.parseSafeInt( 
-					commandArgs[2], 0, maxLoc.getBlockY() - 5, 0 );
+					commandArgs[3], 
+					0, 
+					minLoc.getBlockY() - 2, 
+					0 );
+			case 3:
+				highOffset = InputParseUtil.parseSafeInt( 
+					commandArgs[2], 
+					0, 
+					254 - maxLoc.getBlockY(), 
+					0 );
 			case 2:
 				blockType = InputParseUtil.parseSafeIntPair(
 					commandArgs[1], ":", 
@@ -119,32 +124,30 @@ public class Border implements CommandExecutor
 		if( commandArgs[0].equalsIgnoreCase( "-c" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld, false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute for chunks
-			for( int listIndex = 0 ; listIndex < listSize ; listIndex++ )
+			for( Chunk iter : playerSelect.getChunkSet( playerWorld ) )
 			{
-				// Set up chunk variables
-				Block chunkMinBlock = playerSelect.getChunkOfBlock( 
-					playerWorld, listIndex ).getBlock( 0 , 1 , 0 );
-				Block chunkMaxBlock = playerSelect.getChunkOfBlock( 
-					playerWorld, listIndex ).getBlock( 15 , 1 , 15 );
+				// Loop variables
+				Block low = iter.getBlock( 0, 1, 0 );
+				Block high = iter.getBlock( 15, 1, 15 );
 				
-				// Execute Change
-				setBorder( playerWorld, blockChanges , 
-					chunkMinBlock.getX(), minLoc.getBlockY() - lowOffset,
-					chunkMinBlock.getZ(), 
-					chunkMaxBlock.getX(), maxLoc.getBlockY() + highOffset, 
-					chunkMaxBlock.getZ(),
+				// Run edit
+				setBorder( playerWorld, changes,
+					low.getX(), minLoc.getBlockY() - lowOffset,
+					low.getZ(), 
+					high.getX(), maxLoc.getBlockY() + highOffset,
+					high.getZ(),
 					blockType[0], (byte) blockType[1] );
 			}
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + "Border [Chunk] Complete." );
@@ -155,13 +158,13 @@ public class Border implements CommandExecutor
 		else if( commandArgs[0].equalsIgnoreCase( "-p" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld, false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute Change
-			setBorder( playerWorld, blockChanges , 
+			setBorder( playerWorld, changes, 
 				minLoc.getBlockX(), minLoc.getBlockY() - lowOffset, 
 				minLoc.getBlockZ(), 
 				maxLoc.getBlockX(), maxLoc.getBlockY() + highOffset, 
@@ -169,8 +172,8 @@ public class Border implements CommandExecutor
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + "Border [Point] Complete." );
@@ -190,7 +193,7 @@ public class Border implements CommandExecutor
 	// Method: 	setBorder
 	// Purpose: 	Sets the border from parameters.
 	//////////////////////////////////////////////////////////////////////////
-	private void setBorder( World curWorld, BlockGroup blockStorage,
+	private void setBorder( World curWorld, BlockSet blockStorage,
 		int minX, int minY, int minZ, 
 		int maxX, int maxY, int maxZ, 
 		int blockType , byte bData )
@@ -203,7 +206,7 @@ public class Border implements CommandExecutor
 		
 		// Loop (>)
 		iterZ = minZ;
-		for( iterX = minX ; iterX <= maxX ; iterX++ )
+		for( iterX = minX ; iterX < maxX ; iterX++ )
 		{
 			for( iterY = minY ; iterY <= maxY ; iterY++ )
 			{
@@ -221,7 +224,7 @@ public class Border implements CommandExecutor
 		
 		// Loop (^)
 		iterX = maxX;
-		for( iterZ = minZ ; iterZ <= maxZ ; iterZ++ )
+		for( iterZ = minZ ; iterZ < maxZ ; iterZ++ )
 		{
 			for( iterY = minY ; iterY <= maxY ; iterY++ )
 			{
@@ -239,7 +242,7 @@ public class Border implements CommandExecutor
 		
 		// Loop (<)
 		iterZ = maxZ;
-		for( iterX = maxX; iterX >= minX ; iterX-- )
+		for( iterX = maxX; iterX > minX ; iterX-- )
 		{
 			for( iterY = minY ; iterY <= maxY ; iterY++ )
 			{
@@ -257,7 +260,7 @@ public class Border implements CommandExecutor
 		
 		// Loop (V)
 		iterX = minX;
-		for( iterZ = maxZ; iterZ >= minZ ; iterZ-- )
+		for( iterZ = maxZ; iterZ > minZ ; iterZ-- )
 		{
 			for( iterY = minY ; iterY <= maxY ; iterY++ )
 			{

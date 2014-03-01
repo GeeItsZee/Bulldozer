@@ -2,6 +2,11 @@ package com.yahoo.tracebachi.Utils;
 
 public class BlockInfo
 {
+	// Static class constants
+	private static final int MASK_8 = 0xFF;
+	private static final int MASK_16 = 0xFFFF;
+	private static final int MASK_24 = 0xFFFFFF;
+	
 	// Class Variables
 	private int x = 0;
 	private int y = 0;
@@ -28,7 +33,29 @@ public class BlockInfo
 		subID = subType ;
 	}
 	
-	// TODO: Compress
+	public BlockInfo( long coordinates, int data )
+	{		
+		// Unload the z
+		z = (int) (coordinates & MASK_24);
+		System.out.print( (int) (coordinates & 0xFFFFFF) );
+		coordinates = coordinates >>> 24;
+		
+		// Unload the y
+		y = (int) (coordinates & MASK_16);
+		System.out.print( (short) (coordinates & 0xFFFF) );
+		coordinates = coordinates >>> 16;
+		
+		// Unload the x
+		x = (int) (coordinates & MASK_24);
+		System.out.print( (int) (coordinates & 0xFFFFFF) );
+		coordinates = coordinates >>> 24;
+		
+		// Unload type and subtype
+		subID = (byte) (data & MASK_8);
+		data = data >>> 8;
+		ID = (int) (data & MASK_24);
+		data = data >>> 24;
+	}
 	
 	public int[] getCoordinates()
 	{
@@ -71,6 +98,33 @@ public class BlockInfo
 		z = posZ;
 	}
 	
+	public String compressToString()
+	{
+		// Method variables
+		long xyz = 0;
+		int data = 0;
+		
+		// Load x
+		xyz = xyz | x;
+		xyz = xyz << 24;
+		
+		// Load y
+		xyz = xyz | y;
+		xyz = xyz << 16;
+		
+		// Load z
+		xyz = xyz | z;
+		
+		// Load type and sub type
+		data = data | ID;
+		data = data << 24;
+		data = data | subID;
+		
+		// Return string
+		return new String( String.valueOf( xyz ) + ' ' 
+			+ String.valueOf( data ) );
+	}
+	
 	// NOTE: This method ignores the block ID. It only checks coordinates.
 	@Override
 	public boolean equals( Object toCompare )
@@ -106,9 +160,7 @@ public class BlockInfo
 		// Create a hash string
 		String hashStr = new String( String.valueOf( x )
 			+ String.valueOf( y )
-			+ String.valueOf( z )
-			+ String.valueOf( ID )
-			+ String.valueOf( subID ) );
+			+ String.valueOf( z ) );
 		
 		// Return hash of string
 		return hashStr.hashCode();

@@ -10,7 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 
@@ -37,7 +37,6 @@ public class Copy implements CommandExecutor
 	{
 		// Method variables
 		int argLen = commandArgs.length;
-		int listSize = 0;
 		int lowOffset = 0;
 		int highOffset = 0;
 		String playerName = null;
@@ -46,8 +45,8 @@ public class Copy implements CommandExecutor
 		Location minLoc = null;
 		World playerWorld = null;
 		Block cursorBlock = null;
-		BlockGroup playerSelect = null;
-		BlockGroup clipBoard = null;
+		BlockSet playerSelect = null;
+		BlockSet clipBoard = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "copy" ) )
@@ -85,14 +84,13 @@ public class Copy implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelections.getGroupFor( playerName );
+		playerSelect = core.playerSelection.getGroupFor( playerName );
 		clipBoard = core.playerCopy.getGroupFor( playerName );
-		listSize = (int) playerSelect.getSize();
 		maxLoc = playerSelect.getMaxLocation( playerWorld );
 		minLoc = playerSelect.getMinLocation( playerWorld );
 		
 		// Verify player has a selection
-		if( listSize == 0 )
+		if( playerSelect.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_SELECTION );
 			return true;
@@ -100,13 +98,16 @@ public class Copy implements CommandExecutor
 		else
 		{
 			// Initial setup
-			clipBoard.clearBlockInfo();
+			cursorBlock = playerSelect.getKeyBlock( playerWorld );
+			clipBoard.clearForReuse();
 			clipBoard.setKeyBlock( 
-				playerSelect.getKeyBlock( playerWorld ) );
+				cursorBlock.getX(),
+				cursorBlock.getY(),
+				cursorBlock.getZ() );
 			
 			// Restore the selection
-			core.playerSelections.removeGroupFor( 
-				playerName, true, playerWorld );
+			core.playerSelection.removeGroupAndRestoreFor( 
+				playerName, playerWorld );
 		}
 		
 		// Parse arguments
@@ -114,10 +115,16 @@ public class Copy implements CommandExecutor
 		{
 			case 3:
 				lowOffset = InputParseUtil.parseSafeInt( 
-					commandArgs[2], 0, minLoc.getBlockY() - 5, 0 );
+					commandArgs[2], 
+					0, 
+					minLoc.getBlockY() - 2,
+					0 );
 			case 2:
 				highOffset = InputParseUtil.parseSafeInt( 
-					commandArgs[1], 0, 254 - maxLoc.getBlockY(), 0 );
+					commandArgs[1],
+					0, 
+					254 - maxLoc.getBlockY(),
+					0 );
 				break;
 			default:
 				break;

@@ -1,7 +1,6 @@
 package com.yahoo.tracebachi.Executors;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -10,7 +9,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 @SuppressWarnings("deprecation")
@@ -36,15 +35,14 @@ public class Sphere implements CommandExecutor
 	{
 		// Method variables
 		int argLen = commandArgs.length;
-		int listSize = 0;
-		int radius = 0;
+		int radius = 1;
 		int[] blockType = null;
 		String playerName = null;
 		Player user = null;
-		Location firstLoc = null;
+		Block first = null;
 		World playerWorld = null;
-		BlockGroup playerSelect = null;
-		BlockGroup blockChanges = null;
+		BlockSet playerSelect = null;
+		BlockSet changes = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "sph" ) )
@@ -82,12 +80,11 @@ public class Sphere implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelections.getGroupFor( playerName );
-		listSize = (int) playerSelect.getSize();
-		firstLoc = playerSelect.getFirstLocation( playerWorld );
+		playerSelect = core.playerSelection.getGroupFor( playerName );
+		first = playerSelect.getKeyBlock( playerWorld );
 		
 		// Verify player has a selection
-		if( listSize == 0 )
+		if( playerSelect.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_SELECTION );
 			return true;
@@ -114,21 +111,20 @@ public class Sphere implements CommandExecutor
 		if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld, false );
+			playerSelect.restoreInWorld( false, playerWorld );
 					
 			// Execute Change
-			setFilledSphere( playerWorld, blockChanges, 
-				firstLoc.getBlockX(), firstLoc.getBlockY(),
-				firstLoc.getBlockZ(),
+			setFilledSphere( playerWorld, changes, 
+				first.getX(), first.getY(), first.getZ(),
 				radius,
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + 
@@ -140,21 +136,20 @@ public class Sphere implements CommandExecutor
 		else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld, false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute Change
-			setHollowSphere( playerWorld, blockChanges, 
-				firstLoc.getBlockX(), firstLoc.getBlockY(),
-				firstLoc.getBlockZ(),
+			setHollowSphere( playerWorld, changes, 
+				first.getX(), first.getY(), first.getZ(),
 				radius,
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + 
@@ -176,7 +171,7 @@ public class Sphere implements CommandExecutor
 	// Method: 	setHollowSphere
 	// Purpose: 	Set a hollow sphere.
 	//////////////////////////////////////////////////////////////////////////
-	private void setHollowSphere( World curWorld, BlockGroup blockStorage,
+	private void setHollowSphere( World curWorld, BlockSet blockStorage,
 		int startX, int startY, int startZ,
 		int radius, int blockType, byte bData )
 	{	
@@ -208,12 +203,13 @@ public class Sphere implements CommandExecutor
 							startY + yMod, 
 							startZ + zMod );
 						
-						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
-						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
+						// Check if in set
+						if( blockStorage.addBlock( cursorBlock ) )
+						{							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
+						}
 					}
 				}
 			}
@@ -225,7 +221,7 @@ public class Sphere implements CommandExecutor
 	// Method: 	setFilledSphere
 	// Purpose: 	Set a filled sphere.
 	//////////////////////////////////////////////////////////////////////////
-	private void setFilledSphere( World curWorld, BlockGroup blockStorage,
+	private void setFilledSphere( World curWorld, BlockSet blockStorage,
 		int startX, int startY, int startZ,
 		int radius, int blockType, byte bData )
 	{	
@@ -252,12 +248,13 @@ public class Sphere implements CommandExecutor
 							startY + yMod, 
 							startZ + zMod );
 						
-						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
-						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
+						// Check if in set
+						if( blockStorage.addBlock( cursorBlock ) )
+						{							
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );
+						}
 					}
 				}
 			}

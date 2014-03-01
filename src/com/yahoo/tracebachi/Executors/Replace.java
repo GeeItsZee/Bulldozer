@@ -1,6 +1,7 @@
 package com.yahoo.tracebachi.Executors;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -10,13 +11,12 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 @SuppressWarnings("deprecation")
 public class Replace implements CommandExecutor 
 {
-
 	// Class variables
 	public static final String permName = "Replace";
 	private Bulldozer core = null;
@@ -36,7 +36,6 @@ public class Replace implements CommandExecutor
 	{
 		// Method variables
 		int argLen = commandArgs.length;
-		int listSize = 0;
 		int lowOffset = 0;
 		int highOffset = 0;
 		int[] oldBlockType = null;
@@ -46,8 +45,8 @@ public class Replace implements CommandExecutor
 		Location maxLoc = null;
 		Location minLoc = null ;
 		World playerWorld = null;
-		BlockGroup playerSelect = null;
-		BlockGroup blockChanges = null;
+		BlockSet playerSelect = null;
+		BlockSet changes = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "replace" ) )
@@ -87,13 +86,12 @@ public class Replace implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelections.getGroupFor( playerName );
-		listSize = (int) playerSelect.getSize();
+		playerSelect = core.playerSelection.getGroupFor( playerName );
 		maxLoc = playerSelect.getMaxLocation( playerWorld );
 		minLoc = playerSelect.getMinLocation( playerWorld );
 		
 		// Verify player has a selection
-		if( listSize == 0 )
+		if( playerSelect.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_SELECTION );
 			return true;
@@ -104,10 +102,16 @@ public class Replace implements CommandExecutor
 		{
 			case 5:
 				lowOffset = InputParseUtil.parseSafeInt( 
-					commandArgs[4], 0, 254 - minLoc.getBlockY(), 0 );
+					commandArgs[4], 
+					0, 
+					minLoc.getBlockY() - 5, 
+					0 );
 			case 4:
 				highOffset = InputParseUtil.parseSafeInt( 
-					commandArgs[3], 0, 254 - minLoc.getBlockY(), 0 );
+					commandArgs[3], 
+					0, 
+					254 - maxLoc.getBlockY(),
+					0 );
 			case 3:
 				newBlockType = InputParseUtil.parseSafeIntPair(
 					commandArgs[2], ":", 
@@ -128,33 +132,31 @@ public class Replace implements CommandExecutor
 		if( commandArgs[0].equalsIgnoreCase( "-c" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld , false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute for chunks
-			for( int listIndex = 0 ; listIndex < listSize ; listIndex++ )
+			for( Chunk iter : playerSelect.getChunkSet( playerWorld ) )
 			{
-				// Set up chunk variables
-				Block chunkMinBlock = playerSelect.getChunkOfBlock( 
-					playerWorld, listIndex ).getBlock( 0 , 1 , 0 );
-				Block chunkMaxBlock = playerSelect.getChunkOfBlock( 
-					playerWorld, listIndex ).getBlock( 15 , 1 , 15 );
+				// Loop variables
+				Block low = iter.getBlock( 0, 1, 0 );
+				Block high = iter.getBlock( 15, 1, 15 );
 				
-				// Execute Change
-				setCuboid( playerWorld, blockChanges , 
-					chunkMinBlock.getX(), minLoc.getBlockY() - lowOffset,
-					chunkMinBlock.getZ(), 
-					chunkMaxBlock.getX(), maxLoc.getBlockY() + highOffset,
-					chunkMaxBlock.getZ(), 
-					oldBlockType[0], (byte) newBlockType[1],
+				// Run Edit
+				setCuboid( playerWorld, changes,
+					low.getX(), minLoc.getBlockY() - lowOffset,
+					low.getZ(), 
+					high.getX(), maxLoc.getBlockY() + highOffset,
+					high.getZ(),
+					oldBlockType[0], (byte) oldBlockType[1],
 					newBlockType[0], (byte) newBlockType[1] );
 			}
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName , blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE 
@@ -166,23 +168,23 @@ public class Replace implements CommandExecutor
 		else if( commandArgs[0].equalsIgnoreCase( "-p" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld , false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute Change
-			setCuboid( playerWorld, blockChanges , 
+			setCuboid( playerWorld, changes, 
 				minLoc.getBlockX(), minLoc.getBlockY() - lowOffset,
 				minLoc.getBlockZ(), 
 				maxLoc.getBlockX(), maxLoc.getBlockY() + highOffset,
 				maxLoc.getBlockZ(),
-				oldBlockType[0], (byte) newBlockType[1],
+				oldBlockType[0], (byte) oldBlockType[1],
 				newBlockType[0], (byte) newBlockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName , blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE 
@@ -204,7 +206,7 @@ public class Replace implements CommandExecutor
 	// Method: 	setCuboid
 	// Purpose: 	Replace blocks in the area.
 	//////////////////////////////////////////////////////////////////////////
-	private void setCuboid( World curWorld, BlockGroup blockStorage, 
+	private void setCuboid( World curWorld, BlockSet blockStorage, 
 		int minX, int minY, int minZ, int maxX, int maxY, int maxZ, 
 		int oBlock, byte oData, int fBlock, byte fData )
 	{	

@@ -6,7 +6,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 
 public class Selection implements CommandExecutor
 {
@@ -82,15 +82,15 @@ public class Selection implements CommandExecutor
 		{
 			// Initialize variables
 			Player sender = (Player) client;
-			BlockGroup group = core.playerSelections.getGroupFor( 
+			BlockSet group = core.playerSelection.getGroupFor( 
 				sender.getName() );
 			
 			// Clear the selection
-			if( ! group.isEmpty() )
+			if( group.getSize() > 0 )
 			{
 				// Clear the selection (needs restore)
-				core.playerSelections.removeGroupFor( 
-					sender.getName(), true, sender.getWorld() );
+				core.playerSelection.removeGroupAndRestoreFor( 
+					sender.getName(), sender.getWorld() );
 				
 				// Notify the player
 				sender.sendMessage( core.TAG_POSITIVE 
@@ -112,15 +112,15 @@ public class Selection implements CommandExecutor
 		{
 			// Initialize variables
 			Player sender = (Player) client;
-			BlockGroup group = core.playerCopy.getGroupFor( 
+			BlockSet group = core.playerCopy.getGroupFor( 
 				sender.getName() );
 			
 			// Clear the clipboard
-			if( ! group.isEmpty() )
+			if( group.getSize() > 0 )
 			{
 				// Clear the clipboard (doesn't need a restore)
-				core.playerCopy.removeGroupFor( 
-					sender.getName(), false, sender.getWorld() );
+				core.playerCopy.removeGroupAndClearFor( 
+					sender.getName()  );
 				
 				// Notify the player
 				sender.sendMessage( core.TAG_POSITIVE 

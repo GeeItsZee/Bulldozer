@@ -1,117 +1,145 @@
 package com.yahoo.tracebachi;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import com.yahoo.tracebachi.Utils.BlockGroup;
-
+import com.yahoo.tracebachi.Utils.BlockSet;
 
 public class Listener_Tool implements Listener
 {
-
+	// Static class variables
+	public static final String MARK = ChatColor.YELLOW + "Mark";
+	public static final String PASTE = ChatColor.YELLOW + "Paste";
+	public static final String MEASURE = ChatColor.YELLOW + "Measure";
+	
 	// Class variables
 	private Bulldozer core = null ;
 	
 	// Default Constructor
-	public Listener_Tool( Bulldozer instance )
-	{
-		// Link with the main class
-		core = instance;
-	}
+	public Listener_Tool( Bulldozer instance ) { core = instance; }
 	
 	// Player Click Check
 	@EventHandler
 	public void onPlayerInteract( PlayerInteractEvent event )
 	{
-		// Get the variables to check
-		String pName = event.getPlayer().getName() ;
+		// Method variables
+		boolean wasAdded = false;
+		String playerName = event.getPlayer().getName() ;
+		String itemDisplayName = new String( "&" );
+		Player user = event.getPlayer();
+		Block clicked = event.getClickedBlock();
 		
-		// Verify a Right-Click on Block and Item used has Display Name
-		if( event.getAction() == Action.RIGHT_CLICK_BLOCK && event.hasItem() )
+		// Try to get the name
+		if( event.hasItem() )
 		{
-			// Verify if the Item has meta data to check
 			if( event.getItem().hasItemMeta() )
 			{
-				// Execute for Select
-				if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Mark" ) && 
-						core.verifyPerm( event.getPlayer() , "Select" ) )
+				if( event.getItem().getItemMeta().hasDisplayName() )
 				{
-					// Add it to the selection list
-					core.playerSelections.addBlockFor( pName , event.getClickedBlock() );
-					
-					// Advise the player that the block was added
-					event.getPlayer().sendMessage( core.TAG_POSITIVE + "Block added to the selection." );
-					
-					// Cancel the event
-					event.setCancelled( true );
-				}
-				// Execute for Paste
-				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Paste" ) && 
-						core.verifyPerm( event.getPlayer() , "Paste" ) )
-				{
-					// Initialize variables
-					Block target = event.getClickedBlock();
-					BlockGroup tempGroup = core.playerCopy.getGroupFor( pName );
-					
-					// Recreate (move the reference)
-					tempGroup = tempGroup.recreateAt( target.getWorld() , target.getX() , target.getY() , target.getZ() );
-					
-					// Store if not empty
-					if( ! tempGroup.isEmpty() )
-					{
-						// Add the paste to the undo storage
-						core.playerUndo.pushGroupFor( pName , tempGroup );
-						
-						// Advise the player
-						event.getPlayer().sendMessage( core.TAG_POSITIVE + "Paste operation complete." );
-						tempGroup = null;
-					}
-					else
-					{
-						// Advise the player
-						event.getPlayer().sendMessage( core.TAG_NEGATIVE + "Nothing to paste!" );
-					}
-					
-					// Cancel the event
-					event.setCancelled( true );
-				}
-				// Execute for Measure
-				else if( event.getItem().getItemMeta().getDisplayName().equalsIgnoreCase( ChatColor.YELLOW + "Measure" ) )
-				{
-					// Initialize variables
-					Block target = event.getClickedBlock();
-					BlockGroup tempGroup = core.playerSelections.getGroupFor( pName );
-					Location firstLoc = null;
-					
-					// Execute for selection
-					if( !tempGroup.isEmpty() )
-					{
-						// Get the first block
-						firstLoc = tempGroup.getFirstLocation( null );
-						
-						// Calculate the difference
-						event.getPlayer().sendMessage( ChatColor.GREEN + "Distance between Gold Block and Clicked Block is: "
-							+ ChatColor.YELLOW + "[ " + ChatColor.LIGHT_PURPLE 
-							+ (target.getX() - firstLoc.getBlockX()) + ", "
-							+ (target.getY() - firstLoc.getBlockY()) + ", "
-							+ (target.getZ() - firstLoc.getBlockZ()) + ChatColor.YELLOW + " ]" );
-					}
-					else
-					{
-						// Advise the player
-						event.getPlayer().sendMessage( core.ERROR_NO_SELECTION);
-					}
-					
-					// Cancel the event
-					event.setCancelled( true );
+					itemDisplayName = event.getItem()
+						.getItemMeta().getDisplayName();
 				}
 			}
+		}
+		
+		// Check on block type
+		if( itemDisplayName.equalsIgnoreCase( MARK ) && 
+			core.verifyPerm( user, "Mark" ) && event.hasBlock() )
+		{
+			// Add the block to the selection
+			BlockSet result = core.playerSelection.getGroupFor( playerName );
 			
+			// Add it to the set
+			wasAdded = result.addBlock( clicked );
+			
+			// Tell the player if the block was added
+			if( wasAdded )
+			{
+				// Check if it was the first block
+				if( result.getSize() == 1 )
+				{
+					// Change the block to gold
+					clicked.setType( Material.GOLD_BLOCK );
+					result.setKeyBlock( 
+						clicked.getX(),
+						clicked.getY(),
+						clicked.getZ() );
+				}
+								
+				user.sendRawMessage( core.TAG_POSITIVE
+					+ "Block was added.");
+			}
+			else
+			{
+				user.sendRawMessage( core.TAG_POSITIVE
+					+ "Block already in selection.");
+			}
+			
+			// Cancel the event
+			event.setCancelled( true );
+		}
+		else if( itemDisplayName.equalsIgnoreCase( PASTE ) && 
+			core.verifyPerm( user, "Paste" ) && event.hasBlock() )
+		{
+			// Get the current clip board
+			BlockSet result = core.playerCopy.getGroupFor( playerName );
+			
+			// Check if the clip board is empty
+			if( result.getSize() > 0 )
+			{
+				// Recreate at location
+				result = result.recreateInWorld( false, 
+					clicked.getX(), clicked.getY(), clicked.getZ(), 
+					clicked.getWorld() );
+				
+				// Add to the undo storage
+				core.playerUndo.pushGroupFor( playerName, result );
+				
+				// Tell the player of the paste
+				user.sendRawMessage( core.TAG_POSITIVE
+					+ "Paste Complete.");
+			}
+			else
+			{
+				// Tell the player paste failed
+				user.sendRawMessage( core.ERROR_NO_CLIPBOARD );
+			}
+			
+			// Cancel the event
+			event.setCancelled( true );
+		}
+		else if( itemDisplayName.equalsIgnoreCase( MEASURE ) && 
+			core.verifyPerm( user, "Measure" ) && event.hasBlock() )
+		{
+			// Get the current selection
+			BlockSet result = core.playerSelection.getGroupFor( playerName );
+			Block first = result.getKeyBlock( clicked.getWorld() );
+			
+			// Verify selection is not empty
+			if( result.getSize() > 0 )
+			{
+				// Tell the the distance
+				user.sendRawMessage( ChatColor.GREEN 
+					+ "Distance in x, y, z: "
+					+ ChatColor.YELLOW + "[ " + ChatColor.LIGHT_PURPLE
+					+ (clicked.getX() - first.getX()) + ", "
+					+ (clicked.getY() - first.getY()) + ", "
+					+ (clicked.getZ() - first.getZ())
+					+ ChatColor.YELLOW + " ]" );
+			}
+			else
+			{
+				// Tell there is no selection
+				user.sendRawMessage( core.ERROR_NO_SELECTION );
+			}
+			
+			// Cancel the event
+			event.setCancelled( true );
 		}
 	}
 }

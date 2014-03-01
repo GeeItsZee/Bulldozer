@@ -10,13 +10,13 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 
 /**
- * BlockGroup <p>
+ * BlockGroupQ <p>
  * Used for storage of data pertaining to a single group of blocks. <p>
  * 
  * @author Alias: TheCriticalError
  */
 @SuppressWarnings("deprecation")
-public class BlockGroup
+public class BlockGroupQ
 {
 	// Static constants
 	public static final double ANGLE_TO_RADS = (Math.PI * 2) / 360.0;
@@ -29,9 +29,9 @@ public class BlockGroup
 	private int keyX , keyY , keyZ;
 	
 	/**
-	 * Constructs the BlockGroup object with a new ArrayList of BlockInfo.
+	 * Constructs the BlockGroupQ object with a new ArrayList of BlockInfo.
 	 */
-	public BlockGroup()
+	public BlockGroupQ()
 	{
 		// Create the blockInfoList
 		blockInfoList = new ArrayList< BlockInfo >();
@@ -203,22 +203,22 @@ public class BlockGroup
 	 * of the class from the passed values in order to establish an offset
 	 * for each of the coordinates. An iterator through the list gets the block
 	 * being modified and stores the block info before the recreation into a 
-	 * temporary BlockGroup. Once the list loop has completed, the temporary 
-	 * BlockGroup is returned. <p>
+	 * temporary BlockGroupQ. Once the list loop has completed, the temporary 
+	 * BlockGroupQ is returned. <p>
 	 * 
 	 * @param playerWorld	: World to place the blocks in
 	 * @param x			: Starting X-Coordinate
 	 * @param y			: Starting Y-Coordinate
 	 * @param z			: Starting Z-Coordinate
 	 * 
-	 * @return BlockGroup containing all the blocks that were edited by
+	 * @return BlockGroupQ containing all the blocks that were edited by
 	 * the recreation from the current class's block information list.
 	 */
-	public BlockGroup recreateAt( World playerWorld, int x , int y , int z )
+	public BlockGroupQ recreateAt( World playerWorld, int x , int y , int z )
 	{
 		// Method variables
 		int offX , offY , offZ;
-		BlockGroup toReturn = new BlockGroup();
+		BlockGroupQ toReturn = new BlockGroupQ();
 		BlockInfo node = null;
 		Block cursorBlock = null;
 		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
@@ -308,16 +308,16 @@ public class BlockGroup
 	}
 	
 	/**
-	 * Creates a deep copy of the current BlockGroup object. <p>
+	 * Creates a deep copy of the current BlockGroupQ object. <p>
 	 * 
-	 * @return A new BlockGroup object identical to the one on which the 
+	 * @return A new BlockGroupQ object identical to the one on which the 
 	 * function was called.
 	 */
-	public BlockGroup getCopy()
+	public BlockGroupQ getCopy()
 	{	
 		// Method variables
 		BlockInfo node = null;
-		BlockGroup toReturn = new BlockGroup();
+		BlockGroupQ toReturn = new BlockGroupQ();
 		ListIterator< BlockInfo > iter = blockInfoList.listIterator();
 		
 		// Copy the key block
@@ -344,7 +344,7 @@ public class BlockGroup
 	 * information is stored in an integer array of size five and returned
 	 * to the caller. <p>
 	 * Note: The user must take care to reset the iterator to the beginning
-	 * using the {@link BlockGroup#resetIterator() resetIterator} function. <p>
+	 * using the {@link BlockGroupQ#resetIterator() resetIterator} function. <p>
 	 * 
 	 * @param index	: Position of the BlockInfo from which the results
 	 * are desired. If index is out of bounds, the list will throw an exception.
@@ -555,7 +555,7 @@ public class BlockGroup
 	}
 
 	/**
-	 * Returns if the BlockGroup's BlockInfo list is empty. The function is a 
+	 * Returns if the BlockGroupQ's BlockInfo list is empty. The function is a 
 	 * wrapper for the list's isEmpty function. <p>
 	 * 
 	 * @return Boolean value of true if the BlockInfo list is empty and false if not.

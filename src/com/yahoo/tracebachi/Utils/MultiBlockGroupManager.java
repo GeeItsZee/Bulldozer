@@ -6,38 +6,29 @@ import java.util.Stack;
 import org.bukkit.World;
 
 /**
- * MultiBlockGroupManager <p>
- * Used for the storage of multiple BlockGroups per user identified with a string.
+ * MultiBlockSetManager <p>
+ * Used for the storage of multiple BlockSets per user identified with a string.
  * 
  * @author Alias: TheCriticalError
  */
 public class MultiBlockGroupManager
 {
 	// Class Variables
-	private HashMap< String , Stack< BlockGroup > > dataMap = null;
-	
-	/**
-	 * Constructs the MultiBlockGroupManager with a HashMap relating
-	 * String to {@code Stack< BlockGroup >}. <p>
-	 */
-	public MultiBlockGroupManager()
-	{
-		// Create a new map
-		dataMap = new HashMap< String , Stack < BlockGroup > >();
-	}
+	private HashMap< String, Stack< BlockSet > > dataMap = 
+		new HashMap< String , Stack < BlockSet > >();
 
 	/**
 	 * Pushes a new and pre-made block group into the stack for the player
 	 * identified by the player name-string. <p>
 	 * 
 	 * @param playerName	: Name of the player to store for
-	 * @param toStore		: Reference to the BlockGroup to push into 
+	 * @param toStore		: Reference to the BlockSet to push into 
 	 * the stack
 	 * 
-	 * @return Boolean value of true if the BlockGroup was not null and
+	 * @return Boolean value of true if the BlockSet was not null and
 	 * was stored in the stack and false if the group was null.
 	 */
-	public boolean pushGroupFor( String playerName , BlockGroup toStore )
+	public boolean pushGroupFor( String playerName , BlockSet toStore )
 	{
 		// Verify the group is not null
 		if( toStore != null )
@@ -52,19 +43,19 @@ public class MultiBlockGroupManager
 	}
 	
 	/**
-	 * Checks there are any BlockGroups stored in the stack mapped to the
-	 * name-string. If there are, it returns a reference to the BlockGroup
+	 * Checks there are any BlockSets stored in the stack mapped to the
+	 * name-string. If there are, it returns a reference to the BlockSet
 	 * at the top of the stack using peek(). NOTE: The group can be modified
 	 * while the reference is live. If major modifications need to be made,
-	 * use the getCopy() function of BlockGroup so that the stored data is
+	 * use the getCopy() function of BlockSet so that the stored data is
 	 * not corrupted. <p>
 	 * 
 	 * @param playerName	: String identifier of the player/user
 	 * 
-	 * @return The BlockGroup at the top of the stack OR null if the stack is
+	 * @return The BlockSet at the top of the stack OR null if the stack is
 	 * empty.
 	 */
-	public BlockGroup peekGroupFor( String playerName )
+	public BlockSet peekGroupFor( String playerName )
 	{
 		// Verify the stack is not empty
 		if( ! getStorageFor( playerName ).isEmpty() )
@@ -78,17 +69,17 @@ public class MultiBlockGroupManager
 	}
 	
 	/**
-	 * Checks there are any BlockGroups stored in the stack mapped to the
-	 * name-string. If there are, it returns a reference to the BlockGroup
+	 * Checks there are any BlockSets stored in the stack mapped to the
+	 * name-string. If there are, it returns a reference to the BlockSet
 	 * at the top of the stack using pop(). NOTE: The group is permanently
 	 * removed from the stack. If the reference is lost, the group is lost.
 	 * 
 	 * @param playerName	: String identifier of the player/user
 	 * 
-	 * @return The BlockGroup at the top of the stack OR null if the stack is
+	 * @return The BlockSet at the top of the stack OR null if the stack is
 	 * empty.
 	 */
-	public BlockGroup popGroupFor( String playerName )
+	public BlockSet popGroupFor( String playerName )
 	{
 		// Verify the stack is not empty
 		if( ! getStorageFor( playerName ).isEmpty() )
@@ -101,44 +92,34 @@ public class MultiBlockGroupManager
 		return null;
 	}
 
-	/**
-	 * Removes the player from the manager by removing the stack of BlockGroups.
-	 * If {@code restore} is set to true, the BlockGroups will be reverted as
-	 * they are popped off the stack. In which case, the world needs to be
-	 * provided or a null pointer exception will be thrown. <p>
-	 * 
-	 * @param playerName	: String identifier for the player/user
-	 * 
-	 * @return The integer for the number of BlockGroups removed.
-	 */
-	public int removePlayer( String playerName , boolean restore , World playerWorld )
+	public void removeGroupsAndClearFor( String playerName )
+	{		
+		// Create a temporary reference to the stack
+		Stack< BlockSet > tempGroup = getStorageFor( playerName );
+
+		// While not empty
+		while( ! tempGroup.isEmpty() )
+		{
+			// Clear the blocks in the group
+			tempGroup.pop().cleanup();
+		}
+	}
+	
+	public int removeGroupsAndRestoreFor( String playerName, 
+		World targetWorld )
 	{
 		// Initialize counter
 		int counter = 0;
 		
 		// Create a temporary reference to the stack
-		Stack< BlockGroup > tempGroup = getStorageFor( playerName ); 
-		
-		// Check if restore is true
-		if( restore )
+		Stack< BlockSet > tempGroup = getStorageFor( playerName ); 
+
+		// While not empty
+		while( ! tempGroup.isEmpty() )
 		{
-			// While not empty
-			while( ! tempGroup.isEmpty() )
-			{
-				// Clear the blocks in the group
-				tempGroup.pop().restoreBlocks( playerWorld , true );
-				counter++;
-			}
-		}
-		else
-		{
-			// While not empty
-			while( ! tempGroup.isEmpty() )
-			{
-				// Clear the blocks in the group
-				tempGroup.pop().clearBlockInfo();
-				counter++;
-			}
+			// Clear the blocks in the group
+			tempGroup.pop().restoreInWorld( true, targetWorld );
+			counter++;
 		}
 		
 		// Return counter
@@ -146,7 +127,7 @@ public class MultiBlockGroupManager
 	}
 
 	/**
-	 * Resets the HashMap by removing all mappings and removing all BlockGroup
+	 * Resets the HashMap by removing all mappings and removing all BlockSet
 	 * stacks for all the players mapped. <p>
 	 */
 	public void closeManager()
@@ -155,7 +136,7 @@ public class MultiBlockGroupManager
 		for( String inMap : dataMap.keySet() )
 		{
 			// Remove the player from the map
-			removePlayer( inMap , false , null);
+			removeGroupsAndClearFor( inMap );
 		}
 		
 		// Clear the map
@@ -163,25 +144,24 @@ public class MultiBlockGroupManager
 	}
 
 	/**
-	 * Check the map for a mapping between the string and a Stack< BlockGroup >.
+	 * Check the map for a mapping between the string and a Stack< BlockSet >.
 	 * If there is no mapping, one is created. <p>
 	 * 
 	 * @param playerName	: String identifier for the player / user
 	 * 
-	 * @return The Stack< BlockGroup > mapped to the string passed into the
+	 * @return The Stack< BlockSet > mapped to the string passed into the
 	 * function.
 	 */
-	private Stack< BlockGroup > getStorageFor( String playerName )
+	private Stack< BlockSet > getStorageFor( String playerName )
 	{
 		// Check if the player is in the map
 		if( ! ( dataMap.containsKey( playerName ) ) )
 		{
 			// Add if not there
-			dataMap.put( playerName , new Stack< BlockGroup >() );
+			dataMap.put( playerName , new Stack< BlockSet >() );
 		}
 		
 		// Return the storage
 		return dataMap.get( playerName );
 	}
-		
 }

@@ -3,20 +3,20 @@ package com.yahoo.tracebachi.ThreadTasks;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 
-import com.yahoo.tracebachi.Utils.BlockGroup;
-
+import com.yahoo.tracebachi.Utils.BlockInfo;
+import com.yahoo.tracebachi.Utils.BlockSet;
 
 public class FileInput_Block implements Callable< Boolean >
 {
 	// Class Variables
 	private Scanner inputFile;
-	private BlockGroup blockContainer;
+	private BlockSet blockContainer;
 	private int numBlocks;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	FileLoader Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public FileInput_Block( Scanner target , BlockGroup storage , int numToRead )
+	public FileInput_Block( Scanner target, BlockSet storage , int numToRead )
 	{
 		// Copy variables
 		inputFile = target;
@@ -39,10 +39,13 @@ public class FileInput_Block implements Callable< Boolean >
 		// Set the key block
 		blockContainer.setKeyBlock( 0 , 0 , 0 );
 		
+		long tempL;
+		int tempI;
+		
 		// Loop through and add to the storage
 		for( int i = 0 ; i < numBlocks ; i++ )
 		{
-			// Read and save
+			/*// Read and save
 			tempX = inputFile.nextInt();
 			tempY = inputFile.nextInt();
 			tempZ = inputFile.nextInt();
@@ -51,7 +54,12 @@ public class FileInput_Block implements Callable< Boolean >
 			tempData = inputFile.nextByte();
 			
 			// Push into the storage
-			blockContainer.addBlock( tempX , tempY , tempZ, tempID , tempData );
+			blockContainer.addBlock( new BlockInfo(
+				tempX, tempY, tempZ, tempID, tempData ) );*/
+			tempL = inputFile.nextLong();
+			tempI = inputFile.nextInt();
+			blockContainer.addBlock( new BlockInfo(
+				tempL, tempI) );
 		}
 
 		// Close the scanner

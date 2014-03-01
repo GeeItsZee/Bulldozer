@@ -67,8 +67,8 @@ public class Undo implements CommandExecutor
 			{
 				// Tell the player how many were restored
 				user.sendMessage( core.TAG_POSITIVE + "Undo of " + 
-					core.playerUndo.removePlayer( 
-						playerName, true, playerWorld )
+					core.playerUndo.removeGroupsAndRestoreFor(
+						playerName, playerWorld )
 					+ ChatColor.GREEN + " steps complete." );	
 			}
 			////////////////////////////////////////////////////////////////
@@ -76,8 +76,7 @@ public class Undo implements CommandExecutor
 			else if( cmdArgs[ 0 ].equalsIgnoreCase( "final" ) )
 			{
 				// Clear all the storage for undo without restoring
-				core.playerUndo.removePlayer( 
-					playerName, false, playerWorld );
+				core.playerUndo.removeGroupsAndClearFor( playerName );
 			}		
 		}
 		/////////////////////////////////////////////////////////////////////
@@ -90,7 +89,7 @@ public class Undo implements CommandExecutor
 				// Pop the group and restore it + clear it
 				// At the end of the function, the reference is lost
 				core.playerUndo.popGroupFor( playerName )
-					.restoreBlocks( playerWorld, true );
+					.restoreInWorld( true, playerWorld );
 				
 				// Tell the player there was an undo of one step
 				user.sendMessage( core.TAG_POSITIVE 

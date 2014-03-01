@@ -1,7 +1,6 @@
 package com.yahoo.tracebachi.Executors;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -10,7 +9,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 @SuppressWarnings("deprecation")
@@ -36,17 +35,15 @@ public class Cylinder implements CommandExecutor
 	{
 		// Method variables
 		int argLen = commandArgs.length;
-		int listSize = 0;
-		int height = 0;
-		int radius = 0;
-		int lowOffset = 0;
+		int height = 1;
+		int radius = 1;
 		int[] blockType = null;
 		String playerName = null;
 		Player user = null;
-		Location firstLoc = null;
+		Block first = null;
 		World playerWorld = null;
-		BlockGroup playerSelect = null;
-		BlockGroup blockChanges = null;
+		BlockSet playerSelect = null;
+		BlockSet changes = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "cyl" ) )
@@ -74,9 +71,9 @@ public class Cylinder implements CommandExecutor
 			sender.sendMessage( ChatColor.YELLOW 
 				+ "Command must be of the form:" );
 			sender.sendMessage( ChatColor.GREEN + "     "
-				+ "/cyl -f [Block Type] [Radius] [Height] [Low Offset]" );
+				+ "/cyl -f [Block Type] [Radius] [Height]" );
 			sender.sendMessage( ChatColor.GREEN + "     "
-				+ "/cyl -h [Block Type] [Radius] [Height] [Low Offset]" );
+				+ "/cyl -h [Block Type] [Radius] [Height]" );
 			return true;
 		}
 		
@@ -84,12 +81,11 @@ public class Cylinder implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelections.getGroupFor( playerName );
-		listSize = (int) playerSelect.getSize();
-		firstLoc = playerSelect.getFirstLocation( playerWorld );
+		playerSelect = core.playerSelection.getGroupFor( playerName );
+		first = playerSelect.getKeyBlock( playerWorld );
 		
 		// Verify player has a selection
-		if( listSize == 0 )
+		if( playerSelect.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_SELECTION );
 			return true;
@@ -98,15 +94,18 @@ public class Cylinder implements CommandExecutor
 		// Parse arguments
 		switch( argLen )
 		{
-			case 5:
-				lowOffset = InputParseUtil.parseSafeInt(
-					commandArgs[4], 0, firstLoc.getBlockY() - 5, 0);
 			case 4:
 				height = InputParseUtil.parseSafeInt( 
-					commandArgs[3], 1, 254 - firstLoc.getBlockY(), 1 );
+					commandArgs[3], 
+					1, 
+					254 - first.getY(),
+					1 );
 			case 3:
 				radius = InputParseUtil.parseSafeInt( 
-					commandArgs[2], 1, 2000, 1 );
+					commandArgs[2], 
+					1, 
+					2000, 
+					1 );
 			case 2:
 				blockType = InputParseUtil.parseSafeIntPair(
 					commandArgs[1], ":", 
@@ -122,21 +121,20 @@ public class Cylinder implements CommandExecutor
 		if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld , false );
+			playerSelect.restoreInWorld( false, playerWorld );
 					
 			// Execute Change
-			setFilledCyl( playerWorld, blockChanges, 
-					firstLoc.getBlockX(), firstLoc.getBlockY() - lowOffset, 
-					firstLoc.getBlockZ(), 
-					height + lowOffset, radius, 
+			setFilledCyl( playerWorld, changes, 
+					first.getX(), first.getY(), first.getZ(), 
+					height, radius, 
 					blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + 
@@ -148,21 +146,20 @@ public class Cylinder implements CommandExecutor
 		else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld , false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute Change
-			setHollowCyl( playerWorld, blockChanges, 
-					firstLoc.getBlockX(), firstLoc.getBlockY() - lowOffset, 
-					firstLoc.getBlockZ(), 
-					height + lowOffset, radius, 
+			setHollowCyl( playerWorld, changes, 
+					first.getX(), first.getY(), first.getZ(), 
+					height, radius, 
 					blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			changes = null;
 			
 			// Return for complete
 			user.sendMessage( core.TAG_POSITIVE + 
@@ -184,7 +181,7 @@ public class Cylinder implements CommandExecutor
 	// Method: 	setHollowCyl
 	// Purpose: 	Set a hollow cylinder from parameters.
 	//////////////////////////////////////////////////////////////////////////
-	private void setHollowCyl( World curWorld, BlockGroup blockStorage,
+	private void setHollowCyl( World curWorld, BlockSet blockStorage,
 		int startX, int startY, int startZ, 
 		int height, int radius, int blockType, byte bData )
 	{
@@ -199,29 +196,30 @@ public class Cylinder implements CommandExecutor
 			blockX = startX + (int) (radius * Math.sin( start )); 
 			blockZ = startZ + (int) (radius * Math.cos( start ));
 			
-			for( int yCoord = 0 ; yCoord <= height ; yCoord++ )
+			for( int yCoord = 0 ; yCoord < height ; yCoord++ )
 			{
 				// Get the block
 				cursorBlock = curWorld.getBlockAt( 
-					blockX, startY + yCoord, blockZ );
+					blockX, 
+					startY + yCoord, 
+					blockZ );
 				
 				// Record the data
-				blockStorage.addBlock( cursorBlock );
-				
-				// Change the data
-				cursorBlock.setTypeId( blockType );
-				cursorBlock.setData( bData );
+				if( blockStorage.addBlock( cursorBlock ) )
+				{
+					// Change the data
+					cursorBlock.setTypeId( blockType );
+					cursorBlock.setData( bData );
+				}
 			}
-		}
-		
+		}	
 	}
-	
 	
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	setFilledCyl
 	// Purpose: 	Set a filled cylinder from the parameters.
 	//////////////////////////////////////////////////////////////////////////
-	private void setFilledCyl( World curWorld, BlockGroup blockStorage, 
+	private void setFilledCyl( World curWorld, BlockSet blockStorage, 
 		int startX, int startY, int startZ,
 		int height, int radius, int blockType, byte bData )
 	{	
@@ -237,7 +235,7 @@ public class Cylinder implements CommandExecutor
 				if( ((xCoord * xCoord) + (zCoord * zCoord)) < 
 					(radius * radius) )
 				{
-					for( int yCoord = 0 ; yCoord <= height ; yCoord++ )
+					for( int yCoord = 0 ; yCoord < height ; yCoord++ )
 					{
 						// Get the block
 						cursorBlock = curWorld.getBlockAt( 
@@ -246,16 +244,16 @@ public class Cylinder implements CommandExecutor
 							startZ + zCoord );
 						
 						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
-						// Change the data
-						cursorBlock.setTypeId( blockType );
-						cursorBlock.setData( bData );
+						if( blockStorage.addBlock( cursorBlock ) )
+						{
+							// Change the data
+							cursorBlock.setTypeId( blockType );
+							cursorBlock.setData( bData );	
+						}
 					}
 				}
 			}
 		}
-		
 	}
 	
 }

@@ -3,7 +3,8 @@ package com.yahoo.tracebachi.ThreadTasks;
 import java.io.BufferedWriter;
 import java.util.concurrent.Callable;
 
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockInfo;
+import com.yahoo.tracebachi.Utils.BlockSet;
 
 
 public class FileOutput_Block implements Callable< Boolean >
@@ -12,12 +13,12 @@ public class FileOutput_Block implements Callable< Boolean >
 	private int numBlocks;
 	private String fDesc;
 	private BufferedWriter outputFile;
-	private BlockGroup blockContainer;
+	private BlockSet blockContainer;
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	FileLoader Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public FileOutput_Block( BufferedWriter target , String description , BlockGroup storage )
+	public FileOutput_Block( BufferedWriter target , String description , BlockSet storage )
 	{
 		// Copy variables
 		fDesc = description;
@@ -25,6 +26,7 @@ public class FileOutput_Block implements Callable< Boolean >
 		
 		// Copy references
 		blockContainer = storage;
+		blockContainer.setRelativeToKeyBlock();
 		outputFile = target;
 	}
 
@@ -37,10 +39,8 @@ public class FileOutput_Block implements Callable< Boolean >
 	public Boolean call() throws Exception
 	{
 		// Initialize variables
-		int[] blockInfoArray = new int[5];
-		
-		// Reset the list iterator
-		blockContainer.resetIterator();
+		int[] coords = null;
+		int[] data = null;
 		
 		// Write the description to the file
 		outputFile.write( fDesc );
@@ -53,27 +53,22 @@ public class FileOutput_Block implements Callable< Boolean >
 		// Flush the buffer
 		outputFile.flush();
 		
-		// Reset the iterator
-		blockContainer.resetIterator();
-		
-		// Loop through and add to the storage
-		for( int i = 0 ; i < numBlocks ; i++ )
+		// Loop through and add
+		for( BlockInfo iter : blockContainer.getImmutableVersion() )
 		{
-			// Get the information from the array
-			blockInfoArray = blockContainer.getNext();
+			/*// Get information
+			coords = iter.getCoordinates();
+			data = iter.getData();
 			
 			// Write the coordinates
-			outputFile.write( String.valueOf( blockInfoArray[0] ) );
-			outputFile.write( ' ' );
-			outputFile.write( String.valueOf( blockInfoArray[1] ) );
-			outputFile.write( ' ' );
-			outputFile.write( String.valueOf( blockInfoArray[2] ) );
-			outputFile.write( ' ' );
+			outputFile.write( String.valueOf( coords[0] ) + ' ' 
+				+ String.valueOf( coords[1] ) + ' '
+				+ String.valueOf( coords[2] ) + ' ' );
 			
 			// Write the block ID and data
-			outputFile.write( String.valueOf( blockInfoArray[3] ) );
-			outputFile.write( ' ' );
-			outputFile.write( String.valueOf( blockInfoArray[4] ) );
+			outputFile.write( String.valueOf( data[0] ) + ' ' 
+				+ String.valueOf( data[1] ) + ' ' );*/
+			outputFile.write( iter.compressToString() );
 			outputFile.newLine();
 		}
 

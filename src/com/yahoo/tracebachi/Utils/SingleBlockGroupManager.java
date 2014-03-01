@@ -3,7 +3,6 @@ package com.yahoo.tracebachi.Utils;
 import java.util.HashMap;
 
 import org.bukkit.World;
-import org.bukkit.block.Block;
 
 /**
  * SingleBlockGroupManager <p>
@@ -14,16 +13,8 @@ import org.bukkit.block.Block;
 public class SingleBlockGroupManager
 {
 	// Class variables
-	private HashMap< String , BlockGroup > map = null ;
-	
-	/**
-	 * Constructs the SingleBlockGroupManager with a HashMap relating
-	 * String to BlockGroup. <p>
-	 */
-	public SingleBlockGroupManager()
-	{
-		map = new HashMap< String , BlockGroup >() ;
-	}
+	private HashMap< String, BlockSet > map = 
+		new HashMap< String, BlockSet >();
 	
 	/**
 	 * Searches for the BlockGroup mapped to the string that identifies
@@ -34,13 +25,13 @@ public class SingleBlockGroupManager
 	 * 
 	 * @return The BlockGroup mapped to the player-string.
 	 */
-	public BlockGroup getGroupFor( String playerName )
+	public BlockSet getGroupFor( String playerName )
 	{
 		// Check if player is in the map
 		if( ! map.containsKey( playerName ) )
 		{
 			// Add player to the map
-			map.put( playerName , new BlockGroup() );
+			map.put( playerName, new BlockSet() );
 		}
 		
 		// Return the selection
@@ -54,7 +45,7 @@ public class SingleBlockGroupManager
 	 * block for
 	 * @param selectedBlock	: Block object to add from
 	 */
-	public void addBlockFor( String playerName , Block selectedBlock )
+	/*public void addBlockFor( String playerName , Block selectedBlock )
 	{
 		// Initialize a temporary reference
 		BlockGroup targetGroup = getGroupFor( playerName );
@@ -71,7 +62,7 @@ public class SingleBlockGroupManager
 			// Add modified as glass
 			targetGroup.addBlockAndChange( selectedBlock , 20 , (byte) 0 );
 		}
-	}
+	}*/
 	
 	/**
 	 * Removes the player from the manager by removing the BlockGroup and the
@@ -87,24 +78,28 @@ public class SingleBlockGroupManager
 	 * @return Boolean value indicating true if the player was removed and false
 	 * if the player was not found in the map.
 	 */
-	public boolean removeGroupFor( String playerName , boolean restore , World playerWorld )
+	public boolean removeGroupAndClearFor( String playerName )
 	{	
 		// Check if player is in the map
 		if( map.containsKey( playerName ) )
-		{	
-			// Check if the blocks need to be reverted
-			if( restore )
-			{
-				// Remove the player from the map and revert the blocks
-				map.remove( playerName ).restoreBlocks( playerWorld , true );
-			}
-			else
-			{
-				// Remove the player from the map and clear the blocks
-				map.remove( playerName ).clearBlockInfo();
-			}
-			
-			// Return true
+		{
+			// Remove the player from the map and clear the blocks
+			map.remove( playerName ).cleanup();
+			return true;
+		}
+		
+		// Otherwise
+		return false;
+	}
+	
+	public boolean removeGroupAndRestoreFor( String playerName, 
+		World targetWorld )
+	{	
+		// Check if player is in the map
+		if( map.containsKey( playerName ) )
+		{
+			// Remove the player from the map and revert the blocks
+			map.remove( playerName ).restoreInWorld( true, targetWorld );
 			return true;
 		}
 		
@@ -119,13 +114,12 @@ public class SingleBlockGroupManager
 	public void closeManager()
 	{
 		// Remove all entries in the map
-		for( BlockGroup inMap : map.values() )
+		for( BlockSet inMap : map.values() )
 		{
-			inMap.clearBlockInfo();
+			inMap.cleanup();
 		}
 		
 		// Clear the map
 		map.clear();
 	}
-	
 }

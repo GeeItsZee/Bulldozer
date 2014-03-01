@@ -7,7 +7,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 public class Rotate implements CommandExecutor 
@@ -34,7 +34,7 @@ public class Rotate implements CommandExecutor
 		int numRot = 1;
 		String playerName = null;
 		Player user = null;
-		BlockGroup clipBoard = null;
+		BlockSet clipBoard = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "rotate" ) )
@@ -72,7 +72,7 @@ public class Rotate implements CommandExecutor
 		clipBoard = core.playerCopy.getGroupFor( playerName );
 		
 		// Verify player has something in clipboard
-		if( clipBoard.isEmpty() )
+		if( clipBoard.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_CLIPBOARD );
 			return true;
@@ -83,7 +83,7 @@ public class Rotate implements CommandExecutor
 		{
 			case 1:
 				numRot = InputParseUtil.parseSafeInt( 
-					commandArgs[0], -360, 360, 0 );
+					commandArgs[0], -128, 127, 0 );
 				break;
 			default:
 				break;
@@ -91,7 +91,7 @@ public class Rotate implements CommandExecutor
 
 		/////////////////////////////////////////////////////////////////////
 		// Rotate
-		clipBoard.rotateRelativeToY( numRot );
+		clipBoard.rotateInPlane_XZ( numRot );
 		
 		// Output that the clipboard was rotated
 		user.sendMessage( core.TAG_POSITIVE + "Clipboard Rotated by " 

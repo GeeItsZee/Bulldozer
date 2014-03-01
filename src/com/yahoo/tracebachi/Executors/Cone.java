@@ -1,7 +1,6 @@
 package com.yahoo.tracebachi.Executors;
 
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -10,7 +9,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 @SuppressWarnings("deprecation")
@@ -35,16 +34,15 @@ public class Cone implements CommandExecutor
 	{
 		// Method variables
 		int argLen = commandArgs.length;
-		int listSize = 0;
-		int height = 0;
-		int radius = 0;
+		int height = 1;
+		int radius = 1;
 		int[] blockType = null;
 		String playerName = null;
 		Player user = null;
-		Location firstLoc = null;
+		Block first = null;
 		World playerWorld = null;
-		BlockGroup playerSelect = null;
-		BlockGroup blockChanges = null;
+		BlockSet playerSelect = null;
+		BlockSet changes = null;
 		
 		// Verify valid command
 		if( ! baseCommand.getName().equalsIgnoreCase( "cone" ) )
@@ -82,12 +80,11 @@ public class Cone implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelections.getGroupFor( playerName );
-		listSize = (int) playerSelect.getSize();
-		firstLoc = playerSelect.getFirstLocation( playerWorld );
+		playerSelect = core.playerSelection.getGroupFor( playerName );
+		first = playerSelect.getKeyBlock( playerWorld );
 		
 		// Verify player has a selection
-		if( listSize == 0 )
+		if( playerSelect.getSize() < 1 )
 		{
 			user.sendMessage( core.ERROR_NO_SELECTION );
 			return true;
@@ -98,11 +95,16 @@ public class Cone implements CommandExecutor
 		{
 			case 4:
 				height = InputParseUtil.parseSafeInt( 
-					commandArgs[3], 5 - firstLoc.getBlockY(), 
-					254 - firstLoc.getBlockY(), 1 );
+					commandArgs[3], 
+					5 - first.getY(), 
+					254 - first.getY(),
+					1 );
 			case 3:
 				radius = InputParseUtil.parseSafeInt( 
-					commandArgs[2], 1, 2000, 1 );
+					commandArgs[2], 
+					1, 
+					2000, 
+					1 );
 			case 2:
 				blockType = InputParseUtil.parseSafeIntPair(
 					commandArgs[1], ":", 
@@ -118,23 +120,24 @@ public class Cone implements CommandExecutor
 		if( commandArgs[0].equalsIgnoreCase( "-f" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld, false );
+			playerSelect.restoreInWorld( false, playerWorld );
 					
 			// Execute Change
-			setFilledCone( playerWorld, blockChanges,
-				firstLoc.getBlockX(), firstLoc.getBlockY(), 
-				firstLoc.getBlockZ(), height, radius, 
+			setFilledCone( playerWorld, changes,
+				first.getX(), first.getY(), first.getZ(), 
+				height, radius, 
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName , blockChanges );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName , changes );
+			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE + "Cone [Fill] Complete." );
+			user.sendMessage( core.TAG_POSITIVE 
+				+ "Cone [Fill] Complete." );
 			return true;
 		}
 		/////////////////////////////////////////////////////////////////////
@@ -142,24 +145,25 @@ public class Cone implements CommandExecutor
 		else if( commandArgs[0].equalsIgnoreCase( "-h" ) )
 		{
 			// Make a new group for the player
-			blockChanges = new BlockGroup();
+			changes = new BlockSet();
 			
 			// Revert the selection without clearing the selection
-			playerSelect.restoreBlocks( playerWorld, false );
+			playerSelect.restoreInWorld( false, playerWorld );
 			
 			// Execute Change
-			setHollowCone( playerWorld, blockChanges,
-				firstLoc.getBlockX(), firstLoc.getBlockY(), 
-				firstLoc.getBlockZ(), height, radius, 
+			setHollowCone( playerWorld, changes,
+				first.getX(), first.getY(), first.getZ(),
+				height, radius, 
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, blockChanges );
-			System.out.print( blockChanges.getSize() );
-			blockChanges = null;
+			core.playerUndo.pushGroupFor( playerName, changes );
+			System.out.print( changes.getSize() );
+			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE + "Cone [Hollow] Complete." );
+			user.sendMessage( core.TAG_POSITIVE 
+				+ "Cone [Hollow] Complete." );
 			return true;
 		}
 		/////////////////////////////////////////////////////////////////////
@@ -177,21 +181,26 @@ public class Cone implements CommandExecutor
 	// Method: 	setHollowCone
 	// Purpose: 	Set to hollow cone.
 	//////////////////////////////////////////////////////////////////////////
-	private void setHollowCone( World curWorld, BlockGroup blockStorage, 
+	private void setHollowCone( World curWorld, BlockSet blockStorage, 
 		int startX, int startY, int startZ, 
 		int height, int radius, int blockType, byte bData )
 	{
 		// Method variables
-		System.out.print( height );
-		double stepX, stepZ, stepY = (1.0 / height);
+		double stepX;
+		double stepZ; 
+		double stepY;
 		int coneTip = startY + height;
 		
 		double twoPi = 2.000 * Math.PI;
 		Block cursorBlock = null;
 		
+		// TODO: Faster circle math
 		// Check the case
 		if( height > 0 )
 		{
+			// Set the step
+			stepY = (1.0 / height );
+			
 			// Loop through the area
 			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
 			{
@@ -210,13 +219,9 @@ public class Cone implements CommandExecutor
 					cursorBlock = curWorld.getBlockAt( 
 						offX , coneTip - (int) i, offZ );
 					
-					// Check if already set
-					// TODO: Replace BlockGroup with something more efficient
-					if( cursorBlock.getTypeId() != blockType )
-					{
-						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
+					// Check if in set
+					if( blockStorage.addBlock( cursorBlock ) )
+					{							
 						// Change the data
 						cursorBlock.setTypeId( blockType );
 						cursorBlock.setData( bData );
@@ -226,6 +231,9 @@ public class Cone implements CommandExecutor
 		}
 		else if( height < 0 )
 		{
+			// Set the step
+			stepY = (1.0 / height );
+			
 			// Loop through the area
 			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
 			{
@@ -244,12 +252,9 @@ public class Cone implements CommandExecutor
 					cursorBlock = curWorld.getBlockAt( 
 						offX , coneTip - (int) i, offZ );
 					
-					// Check if already set
-					if( cursorBlock.getTypeId() != blockType )
-					{
-						// Record the data
-						blockStorage.addBlock( cursorBlock );
-						
+					// Check if in set
+					if( blockStorage.addBlock( cursorBlock ) )
+					{							
 						// Change the data
 						cursorBlock.setTypeId( blockType );
 						cursorBlock.setData( bData );
@@ -259,17 +264,18 @@ public class Cone implements CommandExecutor
 		}
 	}
 	
-	
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	setFilledCone
 	// Purpose: 	Set to filled cone.
 	//////////////////////////////////////////////////////////////////////////
-	private void setFilledCone( World curWorld, BlockGroup blockStorage, 
+	private void setFilledCone( World curWorld, BlockSet blockStorage, 
 		int startX, int startY, int startZ, 
 		int height, int radius, int blockType, byte bData )
 	{	
 		// Method variables
-		double stepX, stepZ, stepY = (1.0 / height);
+		double stepX;
+		double stepZ; 
+		double stepY;
 		int coneTip = startY + height;
 		
 		double twoPi = 2.000 * Math.PI;
@@ -278,6 +284,9 @@ public class Cone implements CommandExecutor
 		// Check the case
 		if( height > 0 )
 		{
+			// Set the step
+			stepY = (1.0 / height );
+			
 			// Loop through the area
 			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
 			{
@@ -300,12 +309,9 @@ public class Cone implements CommandExecutor
 						cursorBlock = curWorld.getBlockAt( 
 							offX, blockY, offZ );
 						
-						// Check if already set
-						if( cursorBlock.getTypeId() != blockType )
-						{
-							// Record the data
-							blockStorage.addBlock( cursorBlock );
-							
+						// Check if in set
+						if( blockStorage.addBlock( cursorBlock ) )
+						{							
 							// Change the data
 							cursorBlock.setTypeId( blockType );
 							cursorBlock.setData( bData );
@@ -314,8 +320,11 @@ public class Cone implements CommandExecutor
 				}
 			}
 		}
-		else
+		else if( height < 0 )
 		{
+			// Set the step
+			stepY = (1.0 / height );
+			
 			// Loop through the area
 			for( double radian = 0.001 ; radian <= twoPi ; radian += 0.001 )
 			{
@@ -338,12 +347,9 @@ public class Cone implements CommandExecutor
 						cursorBlock = curWorld.getBlockAt( 
 							offX, blockY, offZ );
 						
-						// Check if already set
-						if( cursorBlock.getTypeId() != blockType )
-						{
-							// Record the data
-							blockStorage.addBlock( cursorBlock );
-							
+						// Check if in set
+						if( blockStorage.addBlock( cursorBlock ) )
+						{							
 							// Change the data
 							cursorBlock.setTypeId( blockType );
 							cursorBlock.setData( bData );

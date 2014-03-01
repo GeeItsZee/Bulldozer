@@ -1,6 +1,6 @@
 name: Bulldozer
 main: com.yahoo.tracebachi.Bulldozer
-version: 2_Beta
+version: 1_Release
 commands:
   box:
     description: Change the blocks in a box specified by the selection. 

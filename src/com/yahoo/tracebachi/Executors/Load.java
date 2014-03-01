@@ -16,7 +16,7 @@ import org.bukkit.entity.Player;
 import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.ThreadTasks.FileInput_Block;
 import com.yahoo.tracebachi.ThreadTasks.FileStatus;
-import com.yahoo.tracebachi.Utils.BlockGroup;
+import com.yahoo.tracebachi.Utils.BlockSet;
 
 
 public class Load implements CommandExecutor
@@ -42,7 +42,7 @@ public class Load implements CommandExecutor
 		int argLen = commandArgs.length;
 		String playerName = null;
 		Player user = null;
-		BlockGroup clipBoard = null;
+		BlockSet clipBoard = null;
 		File fileToOpen = null; 
 		Scanner fileScan = null;
 		
