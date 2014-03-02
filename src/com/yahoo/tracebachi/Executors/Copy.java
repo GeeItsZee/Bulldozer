@@ -13,19 +13,11 @@ import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Managers.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
-
 @SuppressWarnings("deprecation")
 public class Copy implements CommandExecutor
 {
-	
 	// Create the executor's plug-in class instance for linking
 	public static final String permName = "Copy";
-	private Bulldozer core;
-	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Selection Default Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Copy( Bulldozer instance ) { core = instance; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -57,14 +49,14 @@ public class Copy implements CommandExecutor
 		// Verify sender is a player
 		if( ! (sender instanceof Player) )
 		{
-			sender.sendMessage( core.ERROR_CONSOLE );
+			sender.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( sender, permName ) )
+		if( ! Bulldozer.core.verifyPerm( sender, permName ) )
 		{
-			sender.sendMessage( core.ERROR_NO_PERM );
+			sender.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -84,15 +76,15 @@ public class Copy implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelection.getGroupFor( playerName );
-		clipBoard = core.playerCopy.getGroupFor( playerName );
+		playerSelect = Bulldozer.core.getSelectionFor( playerName );
+		clipBoard = Bulldozer.core.getClipboardFor( playerName );
 		maxLoc = playerSelect.getMaxLocation( playerWorld );
 		minLoc = playerSelect.getMinLocation( playerWorld );
 		
 		// Verify player has a selection
 		if( playerSelect.getSize() < 1 )
 		{
-			user.sendMessage( core.ERROR_NO_SELECTION );
+			user.sendMessage( Bulldozer.ERROR_NO_SELECTION );
 			return true;
 		}
 		else
@@ -106,8 +98,7 @@ public class Copy implements CommandExecutor
 				cursorBlock.getZ() );
 			
 			// Restore the selection
-			core.playerSelection.removeGroupAndRestoreFor( 
-				playerName, playerWorld );
+			playerSelect.restoreInWorld( false, playerWorld );
 		}
 		
 		// Parse arguments
@@ -155,7 +146,7 @@ public class Copy implements CommandExecutor
 			}
 			
 			// Output that the selection was copied
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "Selection Copied With Air." );
 			return true;
 		}
@@ -188,7 +179,7 @@ public class Copy implements CommandExecutor
 			}
 			
 			// Output that the selection was copied
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "Selection Copied Without Air." );
 			return true;
 		}
@@ -197,7 +188,7 @@ public class Copy implements CommandExecutor
 		else
 		{
 			// Tell the player flag was invalid
-			user.sendMessage( core.ERROR_BAD_FLAG );
+			user.sendMessage( Bulldozer.ERROR_BAD_FLAG );
 			return true;
 		}
 	}

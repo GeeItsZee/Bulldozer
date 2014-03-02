@@ -19,12 +19,6 @@ public class Replace implements CommandExecutor
 {
 	// Class variables
 	public static final String permName = "Replace";
-	private Bulldozer core = null;
-	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Box Default Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Replace( Bulldozer instance ) { core = instance; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -57,14 +51,14 @@ public class Replace implements CommandExecutor
 		// Verify sender is a player
 		if( ! (sender instanceof Player) )
 		{
-			sender.sendMessage( core.ERROR_CONSOLE );
+			sender.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( sender, permName ) )
+		if( ! Bulldozer.core.verifyPerm( sender, permName ) )
 		{
-			sender.sendMessage( core.ERROR_NO_PERM );
+			sender.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -86,14 +80,14 @@ public class Replace implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelection.getGroupFor( playerName );
+		playerSelect = Bulldozer.core.getSelectionFor( playerName );
 		maxLoc = playerSelect.getMaxLocation( playerWorld );
 		minLoc = playerSelect.getMinLocation( playerWorld );
 		
 		// Verify player has a selection
 		if( playerSelect.getSize() < 1 )
 		{
-			user.sendMessage( core.ERROR_NO_SELECTION );
+			user.sendMessage( Bulldozer.ERROR_NO_SELECTION );
 			return true;
 		}
 		
@@ -155,11 +149,11 @@ public class Replace implements CommandExecutor
 			}
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, changes );
+			Bulldozer.core.pushIntoUndoFor( playerName, changes );
 			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "Replace [Chunk] Complete." );
 			return true;
 		}
@@ -183,11 +177,11 @@ public class Replace implements CommandExecutor
 				newBlockType[0], (byte) newBlockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, changes );
+			Bulldozer.core.pushIntoUndoFor( playerName, changes );
 			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "Point Box Complete." );
 			return true;
 		}
@@ -196,7 +190,7 @@ public class Replace implements CommandExecutor
 		else
 		{
 			// Tell the player flag was invalid
-			user.sendMessage( core.ERROR_BAD_FLAG );
+			user.sendMessage( Bulldozer.ERROR_BAD_FLAG );
 			return true;
 		}
 	}

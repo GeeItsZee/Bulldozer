@@ -13,12 +13,6 @@ public class Undo implements CommandExecutor
 {
 	// Create the executor's plug-in class instance for linking
 	public static final String permName = "Undo";
-	private Bulldozer core;
-	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Undo Default Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Undo( Bulldozer instance ) { core = instance; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Method: onCommand
@@ -42,14 +36,14 @@ public class Undo implements CommandExecutor
 		// Verify sender is a player
 		if( ! (client instanceof Player) )
 		{
-			client.sendMessage( core.ERROR_CONSOLE );
+			client.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( client, permName ) )
+		if( ! Bulldozer.core.verifyPerm( client, permName ) )
 		{
-			client.sendMessage( core.ERROR_NO_PERM );
+			client.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -66,8 +60,8 @@ public class Undo implements CommandExecutor
 			if( cmdArgs[0].equalsIgnoreCase( "all" ) )
 			{
 				// Tell the player how many were restored
-				user.sendMessage( core.TAG_POSITIVE + "Undo of " + 
-					core.playerUndo.removeGroupsAndRestoreFor(
+				user.sendMessage( Bulldozer.TAG_POSITIVE + "Undo of " + 
+					Bulldozer.core.restoreAllFromUndoFor(
 						playerName, playerWorld )
 					+ ChatColor.GREEN + " steps complete." );	
 			}
@@ -76,34 +70,32 @@ public class Undo implements CommandExecutor
 			else if( cmdArgs[ 0 ].equalsIgnoreCase( "final" ) )
 			{
 				// Clear all the storage for undo without restoring
-				core.playerUndo.removeGroupsAndClearFor( playerName );
+				Bulldozer.core.clearUndoFor( playerName );
 			}		
 		}
 		/////////////////////////////////////////////////////////////////////
 		// Undo - Single
 		else
 		{
-			// Check if the returned group is not null
-			if( core.playerUndo.peekGroupFor( playerName ) != null )
+			// Try to pop and restore
+			try
 			{
-				// Pop the group and restore it + clear it
-				// At the end of the function, the reference is lost
-				core.playerUndo.popGroupFor( playerName )
-					.restoreInWorld( true, playerWorld );
+				// Pop the group and restore it
+				Bulldozer.core.restoreOneFromUndoFor( 
+					playerName, playerWorld );
 				
 				// Tell the player there was an undo of one step
-				user.sendMessage( core.TAG_POSITIVE 
+				user.sendMessage( Bulldozer.TAG_POSITIVE 
 					+ "Undo of 1 Complete." );	
 			}
-			else
+			catch( NullPointerException excep )
 			{
 				// Tell the player there was nothing to undo
-				user.sendMessage( core.ERROR_NO_UNDO );	
+				user.sendMessage( Bulldozer.ERROR_NO_UNDO );	
 			}
 		}
 		
 		// Return
 		return true;
 	}
-		
 }

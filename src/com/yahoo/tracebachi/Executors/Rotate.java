@@ -14,12 +14,6 @@ public class Rotate implements CommandExecutor
 {
 	// Class variables
 	public static final String permName = "Rotate";
-	private Bulldozer core = null;
-	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Rotate Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Rotate( Bulldozer instance ) { core = instance; }
 	
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -45,14 +39,14 @@ public class Rotate implements CommandExecutor
 		// Verify sender is a player
 		if( ! (sender instanceof Player) )
 		{
-			sender.sendMessage( core.ERROR_CONSOLE );
+			sender.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( sender, permName ) )
+		if( ! Bulldozer.core.verifyPerm( sender, permName ) )
 		{
-			sender.sendMessage( core.ERROR_NO_PERM );
+			sender.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -69,12 +63,12 @@ public class Rotate implements CommandExecutor
 		// Set player variables
 		user = (Player) sender;
 		playerName = user.getName();
-		clipBoard = core.playerCopy.getGroupFor( playerName );
+		clipBoard = Bulldozer.core.getClipboardFor( playerName );
 		
 		// Verify player has something in clipboard
 		if( clipBoard.getSize() < 1 )
 		{
-			user.sendMessage( core.ERROR_NO_CLIPBOARD );
+			user.sendMessage( Bulldozer.ERROR_NO_CLIPBOARD );
 			return true;
 		}
 		
@@ -94,7 +88,7 @@ public class Rotate implements CommandExecutor
 		clipBoard.rotateInPlane_XZ( numRot );
 		
 		// Output that the clipboard was rotated
-		user.sendMessage( core.TAG_POSITIVE + "Clipboard Rotated by " 
+		user.sendMessage( Bulldozer.TAG_POSITIVE + "Clipboard Rotated by " 
 			+ ChatColor.LIGHT_PURPLE + numRot 
 			+ ChatColor.GREEN + "*90 Degrees." );
 		return true;

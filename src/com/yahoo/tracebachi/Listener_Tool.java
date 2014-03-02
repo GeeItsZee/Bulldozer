@@ -13,7 +13,7 @@ import com.yahoo.tracebachi.Managers.BlockSet;
 public class Listener_Tool implements Listener
 {
 	// Static class variables
-	public static final String MARK = ChatColor.YELLOW + "Mark";
+	public static final String SELECT = ChatColor.YELLOW + "Select";
 	public static final String PASTE = ChatColor.YELLOW + "Paste";
 	public static final String MEASURE = ChatColor.YELLOW + "Measure";
 	
@@ -48,11 +48,12 @@ public class Listener_Tool implements Listener
 		}
 		
 		// Check on block type
-		if( itemDisplayName.equalsIgnoreCase( MARK ) && 
-			core.verifyPerm( user, "Mark" ) && event.hasBlock() )
+		if( itemDisplayName.equalsIgnoreCase( SELECT ) && 
+			core.verifyPerm( user, "Select" ) && event.hasBlock() )
 		{
 			// Add the block to the selection
-			BlockSet result = core.playerSelection.getGroupFor( playerName );
+			BlockSet result = 
+				Bulldozer.core.getSelectionFor( playerName );
 			
 			// Add it to the set
 			wasAdded = result.addBlock( clicked );
@@ -71,12 +72,12 @@ public class Listener_Tool implements Listener
 						clicked.getZ() );
 				}
 								
-				user.sendRawMessage( core.TAG_POSITIVE
+				user.sendRawMessage( Bulldozer.TAG_POSITIVE
 					+ "Block was added.");
 			}
 			else
 			{
-				user.sendRawMessage( core.TAG_POSITIVE
+				user.sendRawMessage( Bulldozer.TAG_POSITIVE
 					+ "Block already in selection.");
 			}
 			
@@ -87,7 +88,8 @@ public class Listener_Tool implements Listener
 			core.verifyPerm( user, "Paste" ) && event.hasBlock() )
 		{
 			// Get the current clip board
-			BlockSet result = core.playerCopy.getGroupFor( playerName );
+			BlockSet result = 
+				Bulldozer.core.getClipboardFor( playerName );
 			
 			// Check if the clip board is empty
 			if( result.getSize() > 0 )
@@ -98,16 +100,16 @@ public class Listener_Tool implements Listener
 					clicked.getWorld() );
 				
 				// Add to the undo storage
-				core.playerUndo.pushGroupFor( playerName, result );
+				Bulldozer.core.pushIntoUndoFor( playerName, result );
 				
 				// Tell the player of the paste
-				user.sendRawMessage( core.TAG_POSITIVE
+				user.sendRawMessage( Bulldozer.TAG_POSITIVE
 					+ "Paste Complete.");
 			}
 			else
 			{
 				// Tell the player paste failed
-				user.sendRawMessage( core.ERROR_NO_CLIPBOARD );
+				user.sendRawMessage( Bulldozer.ERROR_NO_CLIPBOARD );
 			}
 			
 			// Cancel the event
@@ -116,8 +118,8 @@ public class Listener_Tool implements Listener
 		else if( itemDisplayName.equalsIgnoreCase( MEASURE ) && 
 			core.verifyPerm( user, "Measure" ) && event.hasBlock() )
 		{
-			// Get the current selection
-			BlockSet result = core.playerSelection.getGroupFor( playerName );
+			BlockSet result = 
+				Bulldozer.core.getSelectionFor( playerName );
 			Block first = result.getKeyBlock( clicked.getWorld() );
 			
 			// Verify selection is not empty
@@ -135,7 +137,7 @@ public class Listener_Tool implements Listener
 			else
 			{
 				// Tell there is no selection
-				user.sendRawMessage( core.ERROR_NO_SELECTION );
+				user.sendRawMessage( Bulldozer.ERROR_NO_SELECTION );
 			}
 			
 			// Cancel the event

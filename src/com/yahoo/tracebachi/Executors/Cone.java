@@ -17,12 +17,6 @@ public class Cone implements CommandExecutor
 {
 	// Class variables
 	public static final String permName = "Cone";
-	private Bulldozer core = null;
-	
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	// Method: 	Cone Constructor
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public Cone( Bulldozer instance ) { core = instance; }
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -53,14 +47,14 @@ public class Cone implements CommandExecutor
 		// Verify sender is a player
 		if( ! (sender instanceof Player) )
 		{
-			sender.sendMessage( core.ERROR_CONSOLE );
+			sender.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( sender, permName ) )
+		if( ! Bulldozer.core.verifyPerm( sender, permName ) )
 		{
-			sender.sendMessage( core.ERROR_NO_PERM );
+			sender.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -80,13 +74,13 @@ public class Cone implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelection.getGroupFor( playerName );
+		playerSelect = Bulldozer.core.getSelectionFor( playerName );
 		first = playerSelect.getKeyBlock( playerWorld );
 		
 		// Verify player has a selection
 		if( playerSelect.getSize() < 1 )
 		{
-			user.sendMessage( core.ERROR_NO_SELECTION );
+			user.sendMessage( Bulldozer.ERROR_NO_SELECTION );
 			return true;
 		}
 		
@@ -132,11 +126,11 @@ public class Cone implements CommandExecutor
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName , changes );
+			Bulldozer.core.pushIntoUndoFor( playerName, changes );
 			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "Cone [Fill] Complete." );
 			return true;
 		}
@@ -157,12 +151,11 @@ public class Cone implements CommandExecutor
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, changes );
-			System.out.print( changes.getSize() );
+			Bulldozer.core.pushIntoUndoFor( playerName, changes );
 			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "Cone [Hollow] Complete." );
 			return true;
 		}
@@ -171,7 +164,7 @@ public class Cone implements CommandExecutor
 		else
 		{
 			// Tell the player flag was invalid
-			user.sendMessage( core.ERROR_BAD_FLAG );
+			user.sendMessage( Bulldozer.ERROR_BAD_FLAG );
 			return true;
 		}
 	}

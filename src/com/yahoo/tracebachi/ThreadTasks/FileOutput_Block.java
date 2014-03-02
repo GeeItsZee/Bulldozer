@@ -1,8 +1,14 @@
 package com.yahoo.tracebachi.ThreadTasks;
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import org.bukkit.Bukkit;
+
+import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Managers.BlockInfo;
 import com.yahoo.tracebachi.Managers.BlockSet;
 
@@ -10,47 +16,52 @@ import com.yahoo.tracebachi.Managers.BlockSet;
 public class FileOutput_Block implements Callable< Boolean >
 {
 	// Class Variables
-	private int numBlocks;
-	private String fDesc;
-	private BufferedWriter outputFile;
-	private BlockSet blockContainer;
+	private String filename = null;
+	private String desc = null;
+	private String name = null;
+	private BufferedWriter outputFile = null;
 	
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	FileLoader Constructor
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	public FileOutput_Block( BufferedWriter target , String description , BlockSet storage )
+	//////////////////////////////////////////////////////////////////////////
+	public FileOutput_Block( File fileToOpen, String playerName,
+		String description )
 	{
-		// Copy variables
-		fDesc = description;
-		numBlocks = (int) storage.getSize();
+		// Set class variables
+		desc = description;
+		name = playerName;
 		
-		// Copy references
-		blockContainer = storage;
-		blockContainer.setRelativeToKeyBlock();
-		outputFile = target;
+		try
+		{
+			// Try to open the file
+			outputFile = new BufferedWriter( new FileWriter( fileToOpen ));
+			filename = fileToOpen.getName();
+		}
+		catch( IOException excep ) { excep.printStackTrace(); }
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////
 	// Method: 	Call
-	// Purpose:	Read the file and return a block group containing all the blocks 
-	//			stored in the file
-	//////////////////////////////////////////////////////////////////////////////////////////////
+	// Purpose:	Write the blocks to the file
+	//////////////////////////////////////////////////////////////////////////
 	@Override
 	public Boolean call() throws Exception
-	{		
+	{
+		// Method variables
+		BlockSet container = Bulldozer.core.getClipboardFor( name );
+		container.setRelativeToKeyBlock();
+		
 		// Write the description to the file
-		outputFile.write( fDesc );
+		outputFile.write( desc );
 		outputFile.newLine();
 		
 		// Write the number of blocks to the file
-		outputFile.write( String.valueOf( numBlocks ) );
+		outputFile.write( String.valueOf( container.getSize() ) );
 		outputFile.newLine();
-		
-		// Flush the buffer
 		outputFile.flush();
 		
 		// Loop through and add
-		for( BlockInfo iter : blockContainer.getImmutableVersion() )
+		for( BlockInfo iter : container.getImmutableVersion() )
 		{
 			outputFile.write( iter.compressToString() );
 			outputFile.newLine();
@@ -58,6 +69,10 @@ public class FileOutput_Block implements Callable< Boolean >
 
 		// Close the file writing object (flushed by method)
 		outputFile.close();
+		
+		// Send the player a completion message
+		Bukkit.getPlayer( name ).sendMessage( Bulldozer.TAG_POSITIVE + 
+			"File Load of (" + filename + ") Complete." );
 		
 		// Return a copy of the container
 		return new Boolean( true );

@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Scanner;
-import java.util.concurrent.Future;
 
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -14,21 +13,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Managers.BlockSet;
 import com.yahoo.tracebachi.ThreadTasks.FileInput_Block;
-import com.yahoo.tracebachi.ThreadTasks.FileStatus;
 
 
 public class Load implements CommandExecutor
 {
 	// Create the executor's plug-in class instance for linking
 	public static final String permName = "Load";
-	private Bulldozer core;
-	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Selection Default Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Load( Bulldozer instance ) { core = instance; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -42,7 +33,6 @@ public class Load implements CommandExecutor
 		int argLen = commandArgs.length;
 		String playerName = null;
 		Player user = null;
-		BlockSet clipBoard = null;
 		File fileToOpen = null; 
 		Scanner fileScan = null;
 		
@@ -55,14 +45,14 @@ public class Load implements CommandExecutor
 		// Verify sender is a player
 		if( ! (sender instanceof Player) )
 		{
-			sender.sendMessage( core.ERROR_CONSOLE );
+			sender.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( sender, permName ) )
+		if( ! Bulldozer.core.verifyPerm( sender, permName ) )
 		{
-			sender.sendMessage( core.ERROR_NO_PERM );
+			sender.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -81,48 +71,28 @@ public class Load implements CommandExecutor
 		// Set player variables
 		user = (Player) sender;
 		playerName = user.getName();
-		clipBoard = core.playerCopy.getGroupFor( playerName );
 				
 		/////////////////////////////////////////////////////////////////////
 		// Load - Load
 		if( commandArgs[1].equalsIgnoreCase( "-y" ) )
-		{
-			// Initialize Future
-			Future< Boolean > threadResult = null;
+		{			
+			// Set the file to open
+			fileToOpen = new File( Bulldozer.ARCH_FOLDER + 
+				commandArgs[0] + ".arch" );
 			
-			// Attempt to open the file
-			try
+			// Check if found
+			if( fileToOpen.exists() )
 			{
-				// Set the file to open
-				fileToOpen = new File( core.ARCH_FOLDER + 
-					commandArgs[0] + ".arch" );
-				
-				// Try to open the file
-				fileScan = new Scanner( new BufferedReader( 
-					new FileReader( fileToOpen ) ) );
+				// Read Async
+				Bulldozer.core.scheduleAsyncCallable( 
+					new FileInput_Block( fileToOpen, playerName ) );
 			}
-			catch( FileNotFoundException e )
+			else
 			{
 				// Output to the user that the file was not found
-				user.sendMessage( core.TAG_NEGATIVE + "File (" 
+				user.sendMessage( Bulldozer.TAG_NEGATIVE + "File (" 
 					+ commandArgs[0] + ".arch) was not found." );
-				return true;
 			}
-			
-			// Read Description
-			fileScan.nextLine();
-			
-			// Read Asycn
-			threadResult = core.asyncExec.submit( new FileInput_Block( 
-				fileScan, 
-				clipBoard, 
-				fileScan.nextInt() ) );
-			
-			// Check Sync
-			core.getServer().getScheduler().runTask( core, new FileStatus( 
-				threadResult, 
-				user, 
-				"File load of (" + commandArgs[0] + ".arch)", core ) );
 			
 			// Return true (file will be closed in the thread)
 			return true;
@@ -131,12 +101,11 @@ public class Load implements CommandExecutor
 		// Load - Check
 		else if( commandArgs[1].equalsIgnoreCase( "-n" ) )
 		{
-			
 			// Attempt to open the file
 			try
 			{
 				// Set the file to open
-				fileToOpen = new File( core.ARCH_FOLDER + 
+				fileToOpen = new File( Bulldozer.ARCH_FOLDER + 
 					commandArgs[0] + ".arch" );
 				
 				// Try to open the file
@@ -146,13 +115,13 @@ public class Load implements CommandExecutor
 			catch( FileNotFoundException e )
 			{
 				// Output to the user that the file was not found
-				user.sendMessage( core.TAG_NEGATIVE + "File (" 
+				user.sendMessage( Bulldozer.TAG_NEGATIVE + "File (" 
 					+ commandArgs[0] + ".arch) was not found." );
 				return true;
 			}
 			
 			// Read first few lines of information
-			user.sendMessage( core.TAG_POSITIVE 
+			user.sendMessage( Bulldozer.TAG_POSITIVE 
 				+ "File information loaded." );
 			user.sendMessage( ChatColor.AQUA + "     "
 				+ "File Name: " + ChatColor.WHITE + commandArgs[0] );
@@ -166,7 +135,7 @@ public class Load implements CommandExecutor
 			fileScan.close();
 			
 			// Output help message
-			user.sendMessage( core.TAG_POSITIVE + 
+			user.sendMessage( Bulldozer.TAG_POSITIVE + 
 				"To load blocks, do /load [File Name] -y" );
 			
 			// Return
@@ -177,7 +146,7 @@ public class Load implements CommandExecutor
 		else
 		{
 			// Tell the player flag was invalid
-			user.sendMessage( core.ERROR_BAD_FLAG );
+			user.sendMessage( Bulldozer.ERROR_BAD_FLAG );
 			return true;
 		}
 	}

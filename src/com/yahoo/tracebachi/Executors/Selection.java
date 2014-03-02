@@ -1,23 +1,46 @@
 package com.yahoo.tracebachi.Executors;
 
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import com.yahoo.tracebachi.Bulldozer;
 import com.yahoo.tracebachi.Managers.BlockSet;
 
 public class Selection implements CommandExecutor
-{
-	// Create the executor's plug-in class instance for linking
-	private Bulldozer core;
+{	
+	// Class Variables
+	private ItemStack selectionTool = new ItemStack( 
+		Material.WOOL , 1 , (byte) 15 );
+	private ItemStack pasteTool = new ItemStack( 
+		Material.WOOL , 1 , (byte) 9 );
+	private ItemStack measureTool = new ItemStack( 
+		Material.WOOL , 1 , (byte) 1 );
 	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Selection Default Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Selection( Bulldozer instance ) { core = instance; }
-
+	// Constructor
+	public Selection()
+	{
+		// Get the metadata
+		ItemMeta select = selectionTool.getItemMeta();
+		ItemMeta paste = pasteTool.getItemMeta();
+		ItemMeta measure = measureTool.getItemMeta();
+		
+		// Set the item meta
+		select.setDisplayName( ChatColor.YELLOW + "Select" );
+		selectionTool.setItemMeta( select );
+		
+		paste.setDisplayName( ChatColor.YELLOW + "Paste" );
+		pasteTool.setItemMeta( paste );
+		
+		measure.setDisplayName( ChatColor.YELLOW + "Measure" );
+		measureTool.setItemMeta( measure );
+	}
+	
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
 	// Purpose: 	Handles "kit", "clears", "clearc" commands
@@ -29,7 +52,7 @@ public class Selection implements CommandExecutor
 		// Verify sender is a player
 		if( ! (client instanceof Player) )
 		{
-			client.sendMessage( core.ERROR_CONSOLE );
+			client.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
@@ -41,35 +64,35 @@ public class Selection implements CommandExecutor
 			Player sender = (Player) client;
 			
 			// Give the player the tool if they don't have one
-			if( !( sender.getInventory().contains( core.selectionTool ) ) )
+			if( !( sender.getInventory().contains( selectionTool ) ) )
 			{	
 				// Give
-				sender.getInventory().addItem( core.selectionTool );
+				sender.getInventory().addItem( selectionTool );
 				
 				// Output that the marker and paste tool was given
-				sender.sendMessage( core.TAG_POSITIVE 
+				sender.sendMessage( Bulldozer.TAG_POSITIVE 
 					+ "Given: Marker Block (Black Wool)" );
 			}
 			
 			// Give the player the tool if they don't have one
-			if( !( sender.getInventory().contains( core.pasteTool ) ) )
+			if( !( sender.getInventory().contains( pasteTool ) ) )
 			{	
 				// Give
-				sender.getInventory().addItem( core.pasteTool );
+				sender.getInventory().addItem( pasteTool );
 				
 				// Output that the marker and paste tool was given
-				sender.sendMessage( core.TAG_POSITIVE 
+				sender.sendMessage( Bulldozer.TAG_POSITIVE 
 					+ "Given: Paste Block (Blue Wool)" );
 			}
 			
 			// Give the player the tool if they don't have one
-			if( !( sender.getInventory().contains( core.measureTool ) ) )
+			if( !( sender.getInventory().contains( measureTool ) ) )
 			{	
 				// Give
-				sender.getInventory().addItem( core.measureTool );
+				sender.getInventory().addItem( measureTool );
 				
 				// Output that the marker and paste tool was given
-				sender.sendMessage( core.TAG_POSITIVE 
+				sender.sendMessage( Bulldozer.TAG_POSITIVE 
 					+ "Given: Measure Block (Orange Wool)" );
 			}
 			
@@ -82,24 +105,23 @@ public class Selection implements CommandExecutor
 		{
 			// Initialize variables
 			Player sender = (Player) client;
-			BlockSet group = core.playerSelection.getGroupFor( 
+			BlockSet group = Bulldozer.core.getSelectionFor( 
 				sender.getName() );
 			
 			// Clear the selection
 			if( group.getSize() > 0 )
 			{
 				// Clear the selection (needs restore)
-				core.playerSelection.removeGroupAndRestoreFor( 
-					sender.getName(), sender.getWorld() );
+				group.restoreInWorld( true, sender.getWorld() );
 				
 				// Notify the player
-				sender.sendMessage( core.TAG_POSITIVE 
+				sender.sendMessage( Bulldozer.TAG_POSITIVE 
 					+ "Selection Cleared" );
 			}
 			else
 			{
 				// Notify the player
-				sender.sendMessage( core.TAG_NEGATIVE 
+				sender.sendMessage( Bulldozer.TAG_NEGATIVE 
 					+ "Selection already clear." );
 			}
 			
@@ -112,24 +134,23 @@ public class Selection implements CommandExecutor
 		{
 			// Initialize variables
 			Player sender = (Player) client;
-			BlockSet group = core.playerCopy.getGroupFor( 
-				sender.getName() );
+			BlockSet group = Bulldozer.core.getClipboardFor( 
+				sender.getName() ); 
 			
 			// Clear the clipboard
 			if( group.getSize() > 0 )
 			{
 				// Clear the clipboard (doesn't need a restore)
-				core.playerCopy.removeGroupAndClearFor( 
-					sender.getName()  );
+				group.clearForReuse();
 				
 				// Notify the player
-				sender.sendMessage( core.TAG_POSITIVE 
+				sender.sendMessage( Bulldozer.TAG_POSITIVE 
 					+ "Clipboard Cleared" );
 			}
 			else
 			{
 				// Notify the player
-				sender.sendMessage( core.TAG_NEGATIVE 
+				sender.sendMessage( Bulldozer.TAG_NEGATIVE 
 					+ "Clipboard already clear." );
 			}
 			

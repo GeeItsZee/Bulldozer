@@ -19,12 +19,6 @@ public class Border implements CommandExecutor
 {
 	// Class variables
 	public static final String permName = "Border";
-	private Bulldozer core = null;
-	
-	//////////////////////////////////////////////////////////////////////////
-	// Method: 	Border Default Constructor
-	//////////////////////////////////////////////////////////////////////////
-	public Border( Bulldozer instance ) { core = instance; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Method: 	onCommand
@@ -56,14 +50,14 @@ public class Border implements CommandExecutor
 		// Verify sender is a player
 		if( ! (sender instanceof Player) )
 		{
-			sender.sendMessage( core.ERROR_CONSOLE );
+			sender.sendMessage( Bulldozer.ERROR_CONSOLE );
 			return true;
 		}
 		
 		// Verify permission
-		if( ! core.verifyPerm( sender, permName ) )
+		if( ! Bulldozer.core.verifyPerm( sender, permName ) )
 		{
-			sender.sendMessage( core.ERROR_NO_PERM );
+			sender.sendMessage( Bulldozer.ERROR_NO_PERM );
 			return true;
 		}
 		
@@ -83,14 +77,14 @@ public class Border implements CommandExecutor
 		user = (Player) sender;
 		playerName = user.getName();
 		playerWorld = user.getWorld();
-		playerSelect = core.playerSelection.getGroupFor( playerName );
+		playerSelect = Bulldozer.core.getSelectionFor( playerName );
 		maxLoc = playerSelect.getMaxLocation( playerWorld );
 		minLoc = playerSelect.getMinLocation( playerWorld );
 		
 		// Verify player has a selection
 		if( playerSelect.getSize() < 1 )
 		{
-			user.sendMessage( core.ERROR_NO_SELECTION );
+			user.sendMessage( Bulldozer.ERROR_NO_SELECTION );
 			return true;
 		}
 		
@@ -146,11 +140,11 @@ public class Border implements CommandExecutor
 			}
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, changes );
+			Bulldozer.core.pushIntoUndoFor( playerName, changes );
 			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE + "Border [Chunk] Complete." );
+			user.sendMessage( Bulldozer.TAG_POSITIVE + "Border [Chunk] Complete." );
 			return true;
 		}
 		/////////////////////////////////////////////////////////////////////
@@ -172,11 +166,11 @@ public class Border implements CommandExecutor
 				blockType[0], (byte) blockType[1] );
 			
 			// Push the recorded blocks
-			core.playerUndo.pushGroupFor( playerName, changes );
+			Bulldozer.core.pushIntoUndoFor( playerName, changes );
 			changes = null;
 			
 			// Return for complete
-			user.sendMessage( core.TAG_POSITIVE + "Border [Point] Complete." );
+			user.sendMessage( Bulldozer.TAG_POSITIVE + "Border [Point] Complete." );
 			return true;
 		}
 		/////////////////////////////////////////////////////////////////////
@@ -184,7 +178,7 @@ public class Border implements CommandExecutor
 		else
 		{
 			// Tell the player flag was invalid
-			user.sendMessage( core.ERROR_BAD_FLAG );
+			user.sendMessage( Bulldozer.ERROR_BAD_FLAG );
 			return true;
 		}
 	}
