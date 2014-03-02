@@ -19,7 +19,7 @@ public class FileStatus implements Runnable
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	// Method: 	SyncStatus Constructor
 	//////////////////////////////////////////////////////////////////////////////////////////////
-	public FileStatus( Future< Boolean > future , Player targetOfMessage , String taskName , Bulldozer callingPlugin )
+	public FileStatus( Future< Boolean > future, Player targetOfMessage, String taskName, Bulldozer callingPlugin )
 	{
 		// Copy variables
 		callCheck = future;

@@ -13,9 +13,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
+import com.yahoo.tracebachi.Managers.BlockSet;
 import com.yahoo.tracebachi.ThreadTasks.FileOutput_Block;
 import com.yahoo.tracebachi.ThreadTasks.FileStatus;
-import com.yahoo.tracebachi.Utils.BlockSet;
 
 
 public class Save implements CommandExecutor

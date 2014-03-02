@@ -3,8 +3,8 @@ package com.yahoo.tracebachi.ThreadTasks;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 
-import com.yahoo.tracebachi.Utils.BlockInfo;
-import com.yahoo.tracebachi.Utils.BlockSet;
+import com.yahoo.tracebachi.Managers.BlockInfo;
+import com.yahoo.tracebachi.Managers.BlockSet;
 
 public class FileInput_Block implements Callable< Boolean >
 {
@@ -33,29 +33,15 @@ public class FileInput_Block implements Callable< Boolean >
 	public Boolean call() throws Exception
 	{
 		// Initialize variables
-		int tempX , tempY , tempZ , tempID ;
-		byte tempData;
+		int tempI = 0;
+		long tempL = 0;
 		
 		// Set the key block
-		blockContainer.setKeyBlock( 0 , 0 , 0 );
-		
-		long tempL;
-		int tempI;
+		blockContainer.setKeyBlock( 0, 0, 0 );
 		
 		// Loop through and add to the storage
 		for( int i = 0 ; i < numBlocks ; i++ )
 		{
-			/*// Read and save
-			tempX = inputFile.nextInt();
-			tempY = inputFile.nextInt();
-			tempZ = inputFile.nextInt();
-			
-			tempID = inputFile.nextInt();
-			tempData = inputFile.nextByte();
-			
-			// Push into the storage
-			blockContainer.addBlock( new BlockInfo(
-				tempX, tempY, tempZ, tempID, tempData ) );*/
 			tempL = inputFile.nextLong();
 			tempI = inputFile.nextInt();
 			blockContainer.addBlock( new BlockInfo(

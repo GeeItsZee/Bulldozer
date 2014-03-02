@@ -24,8 +24,8 @@ import com.yahoo.tracebachi.Executors.Save;
 import com.yahoo.tracebachi.Executors.Selection;
 import com.yahoo.tracebachi.Executors.Sphere;
 import com.yahoo.tracebachi.Executors.Undo;
-import com.yahoo.tracebachi.Utils.MultiBlockGroupManager;
-import com.yahoo.tracebachi.Utils.SingleBlockGroupManager;
+import com.yahoo.tracebachi.Managers.MultiBlockGroupManager;
+import com.yahoo.tracebachi.Managers.SingleBlockGroupManager;
 
 public class Bulldozer extends JavaPlugin
 {	

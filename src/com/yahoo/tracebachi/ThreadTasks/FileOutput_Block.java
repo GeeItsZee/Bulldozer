@@ -3,8 +3,8 @@ package com.yahoo.tracebachi.ThreadTasks;
 import java.io.BufferedWriter;
 import java.util.concurrent.Callable;
 
-import com.yahoo.tracebachi.Utils.BlockInfo;
-import com.yahoo.tracebachi.Utils.BlockSet;
+import com.yahoo.tracebachi.Managers.BlockInfo;
+import com.yahoo.tracebachi.Managers.BlockSet;
 
 
 public class FileOutput_Block implements Callable< Boolean >
@@ -37,11 +37,7 @@ public class FileOutput_Block implements Callable< Boolean >
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	public Boolean call() throws Exception
-	{
-		// Initialize variables
-		int[] coords = null;
-		int[] data = null;
-		
+	{		
 		// Write the description to the file
 		outputFile.write( fDesc );
 		outputFile.newLine();
@@ -56,18 +52,6 @@ public class FileOutput_Block implements Callable< Boolean >
 		// Loop through and add
 		for( BlockInfo iter : blockContainer.getImmutableVersion() )
 		{
-			/*// Get information
-			coords = iter.getCoordinates();
-			data = iter.getData();
-			
-			// Write the coordinates
-			outputFile.write( String.valueOf( coords[0] ) + ' ' 
-				+ String.valueOf( coords[1] ) + ' '
-				+ String.valueOf( coords[2] ) + ' ' );
-			
-			// Write the block ID and data
-			outputFile.write( String.valueOf( data[0] ) + ' ' 
-				+ String.valueOf( data[1] ) + ' ' );*/
 			outputFile.write( iter.compressToString() );
 			outputFile.newLine();
 		}
@@ -78,5 +62,4 @@ public class FileOutput_Block implements Callable< Boolean >
 		// Return a copy of the container
 		return new Boolean( true );
 	}
-
 }

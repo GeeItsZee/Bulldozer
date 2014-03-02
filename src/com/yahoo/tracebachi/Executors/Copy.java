@@ -10,7 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import com.yahoo.tracebachi.Bulldozer;
-import com.yahoo.tracebachi.Utils.BlockSet;
+import com.yahoo.tracebachi.Managers.BlockSet;
 import com.yahoo.tracebachi.Utils.InputParseUtil;
 
 

@@ -8,7 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-import com.yahoo.tracebachi.Utils.BlockSet;
+import com.yahoo.tracebachi.Managers.BlockSet;
 
 public class Listener_Tool implements Listener
 {
